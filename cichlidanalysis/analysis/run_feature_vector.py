@@ -23,7 +23,7 @@ from cichlidanalysis.plotting.plot_total_rest import plot_total_rest_ordered, pl
     plot_total_rest_diet, plot_total_rest_hist, plot_total_rest_vs_spd
 from cichlidanalysis.plotting.plot_bouts import plot_bout_lens_rest_day_night, plot_dn_dif_rest_bouts, \
     plot_bout_lens_non_rest_day_night, plot_dn_dif_non_rest_bouts, rest_bouts_hists
-from cichlidanalysis.plotting.plot_eco_traits import plot_total_rest_ecospace, plot_ecospace_vs_temporal_guilds, \
+from cichlidanalysis.plotting.plot_eco_traits import plot_ecospace_vs_temporal_guilds, \
     plot_d15N_d13C_diet_guilds, plot_diet_guilds_hist, plot_total_rest_vs_diet_significance, \
     plot_ecospace_vs_temporal_guilds_density
 
@@ -41,7 +41,7 @@ def subset_feature_plt(rootdir, averages_i, features, plot_label, labelling):
     :return:
     """
     # fig = plt.figure(figsize=(5, 10))
-    fig = sns.clustermap(averages_i.T.loc[:, features], col_cluster=False,
+    fig = sns.clustermap(averages_i.T.loc[:, features].astype(float), col_cluster=False,
                          yticklabels=True)  # , cbar_kws=dict(use_gridspec=False,location="top")
     plt.tight_layout(pad=2)
     plt.savefig(os.path.join(rootdir, "subset_feature_plot_{}.png".format(plot_label)))
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(rootdir, "clustermap_day_night_ratio_fish.png"))
     plt.close()
 
-    sns.clustermap(pd.concat([day_night_ratio_sp, diel_species.diurnal * 1], axis=1), col_cluster=False,
+    sns.clustermap(pd.concat([day_night_ratio_sp, diel_species.diurnal * 1], axis=1).astype(float), col_cluster=False,
                    cmap='RdBu_r',
                    vmin=0, vmax=2)
     plt.tight_layout()
@@ -231,7 +231,6 @@ if __name__ == '__main__':
 
     diet_vs_size(rootdir, col_vector, cichlid_meta, feature_v_mean)
     feature_correlations(rootdir, feature_v_mean, fv_eco_sp_ave)
-    plot_total_rest_ecospace(rootdir, fv_eco_sp_ave, ronco_data)
     plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
     # plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)

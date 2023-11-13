@@ -60,38 +60,35 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
 
 
 def feature_correlations(rootdir, feature_v_mean, fv_eco_sp_ave):
-
-    for behav in ['total_rest', 'night-day_dif_rest', 'size_female']:
+    feature_v_mean_i = feature_v_mean.set_index('six_letter_name_Ronco')
+    for behav in ['total_rest', 'day_night_dif', 'size_female']:
         for col in ['body_PC1', 'body_PC2', 'LPJ_PC1', 'LPJ_PC2', 'oral_PC1', 'oral_PC2', 'd15N', 'd13C', 'size_male',
-                    'size_female', 'fish_length_mm']:
-            non_nan_rows = fv_eco_sp_ave[fv_eco_sp_ave[behav].isna() == False].index & fv_eco_sp_ave[fv_eco_sp_ave[col].isna() == False].index
-            model, r_sq = run_linear_reg(fv_eco_sp_ave.loc[non_nan_rows, behav], fv_eco_sp_ave.loc[non_nan_rows, col])
-            plt_lin_reg(rootdir, fv_eco_sp_ave.loc[non_nan_rows, behav], fv_eco_sp_ave.loc[non_nan_rows, col], model, r_sq)
+                    'size_female']:
+            non_nan_rows = feature_v_mean_i[feature_v_mean_i[behav].isna() == False].index & fv_eco_sp_ave[fv_eco_sp_ave[col].isna() == False].index
+            model, r_sq = run_linear_reg(feature_v_mean_i.loc[non_nan_rows, behav], fv_eco_sp_ave.loc[non_nan_rows, col])
+            plt_lin_reg(rootdir, feature_v_mean_i.loc[non_nan_rows, behav], fv_eco_sp_ave.loc[non_nan_rows, col], model, r_sq)
 
     # correlating day/night vs crepuscularity
-    model, r_sq = run_linear_reg(feature_v_mean.peak, abs(feature_v_mean.day_night_dif))
-    plt_lin_reg(rootdir, feature_v_mean.peak, abs(feature_v_mean.day_night_dif), model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.peak, abs(feature_v_mean_i.day_night_dif))
+    plt_lin_reg(rootdir, feature_v_mean_i.peak, abs(feature_v_mean_i.day_night_dif), model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.peak_amplitude, abs(feature_v_mean.day_night_dif))
-    plt_lin_reg(rootdir, feature_v_mean.peak_amplitude, abs(feature_v_mean.day_night_dif), model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.peak_amplitude, abs(feature_v_mean_i.day_night_dif))
+    plt_lin_reg(rootdir, feature_v_mean_i.peak_amplitude, abs(feature_v_mean_i.day_night_dif), model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.peak, feature_v_mean.day_night_dif)
-    plt_lin_reg(rootdir, feature_v_mean.peak, feature_v_mean.day_night_dif, model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.peak, feature_v_mean_i.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean_i.peak, feature_v_mean_i.day_night_dif, model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif)
-    plt_lin_reg(rootdir, feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif, model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.peak_amplitude, feature_v_mean_i.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean_i.peak_amplitude, feature_v_mean_i.day_night_dif, model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.day_night_dif)
-    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.day_night_dif, model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.total_rest, feature_v_mean_i.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean_i.total_rest, feature_v_mean_i.day_night_dif, model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.peak)
-    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.peak, model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.total_rest, feature_v_mean_i.peak)
+    plt_lin_reg(rootdir, feature_v_mean_i.total_rest, feature_v_mean_i.peak, model, r_sq)
 
-    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.fish_length_mm)
-    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.peak, model, r_sq)
-
-    model, r_sq = run_linear_reg(fv_eco_sp_ave.total_rest, fv_eco_sp_ave.d15N)
-    plt_lin_reg(rootdir, fv_eco_sp_ave.total_rest, fv_eco_sp_ave.d15N, model, r_sq)
+    model, r_sq = run_linear_reg(feature_v_mean_i.total_rest, feature_v_mean_i.fish_length_mm)
+    plt_lin_reg(rootdir, feature_v_mean_i.total_rest, feature_v_mean_i.fish_length_mm, model, r_sq)
     plt.close('all')
 
     # fig = plt.figure(figsize=(5, 5))

@@ -10,20 +10,6 @@ from scipy import stats
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
 
-def plot_total_rest_ecospace(rootdir, fv_eco_sp_ave, ronco_data):
-    fig = plt.figure(figsize=(3, 3))
-    ronco_data_ave = ronco_data.groupby(by='sp').mean()
-    ax = sns.scatterplot(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=12)
-    ax = sns.scatterplot(data=fv_eco_sp_ave, x='d13C', y='d15N', hue='total_rest', s=20, legend=None, palette='winter')
-    ax.set_xlabel('$\delta^{13} C$')
-    ax.set_ylabel('$\delta^{15} N$')
-    sns.despine(top=True, right=True)
-    fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_total_rest.png"), dpi=1200)
-    plt.close()
-    return
-
-
 def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave):
     # pelagic and trophic levels (ecospace) vs temporal guilds
     fig = plt.figure(figsize=(3, 3))
