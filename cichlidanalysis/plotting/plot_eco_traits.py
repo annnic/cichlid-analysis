@@ -102,7 +102,7 @@ def plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
     fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_diet-guilds.png"))
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_diet-guilds.png"), dpi=1200)
     plt.close()
     return
 
@@ -129,7 +129,7 @@ def plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns):
     ax = sns.barplot(x="daytime", y="species_n", hue="diet", data=df_group, palette=customPalette)
     ax.set(xlabel=None)
     ax.set(ylabel="# of species")
-    plt.savefig(os.path.join(rootdir, "diet-guilds_hist.png"))
+    plt.savefig(os.path.join(rootdir, "diet-guilds_hist.png"), dpi=1200)
     plt.close()
     return
 

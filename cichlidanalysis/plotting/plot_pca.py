@@ -50,6 +50,41 @@ def plot_2D_pc_space(rootdir, finalDf, target):
     return
 
 
+def plot_2D_pc_space_colour(rootdir, finalDf, target):
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel('Principal Component 1', fontsize=15)
+    ax.set_ylabel('Principal Component 2', fontsize=15)
+    ax.set_title('2 component PCA', fontsize=20)
+
+    im = ax.scatter(finalDf.loc[:, 'pc1'], finalDf.loc[:, 'pc2'], c=finalDf.loc[:, target], s=50)
+    # Add a colorbar
+    fig.colorbar(im, ax=ax)
+
+    ax.grid()
+    plt.savefig(os.path.join(rootdir, "PCA_points_2D_space_coloured-by-{}.png".format(target)), dpi=1000)
+    plt.close()
+    return
+
+
+def plot_2D_pc_space_label_species(rootdir, finalDf, target):
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel('Principal Component 1', fontsize=15)
+    ax.set_ylabel('Principal Component 2', fontsize=15)
+    ax.set_title('2 component PCA', fontsize=20)
+    ax.scatter(finalDf.pc1, finalDf.pc2)
+    # Add labels to the points
+    for i, label in enumerate(target):
+        plt.annotate(label, (finalDf.pc1[i], finalDf.pc2[i]), textcoords="offset points", xytext=(0, 10), ha='center')
+
+    # ax.scatter(finalDf.loc[:, 'pc1'], finalDf.loc[:, 'pc2'], s=50)
+    ax.grid()
+    plt.savefig(os.path.join(rootdir, "PCA_points_2D_space_labelled{}.png".format('species')), dpi=1000)
+    plt.close()
+    return
+
+
 def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     # plot 2D PC space with labeled points
     day = set(np.where(data_input.index.to_series().reset_index(drop=True) < '19:00')[0]) & set(
@@ -144,6 +179,7 @@ def pc_loadings_on_2D(rootdir, principalComponents, coeff, loadings, top_n):
     ys = principalComponents[:, 1]
     scalex = 1.0/(xs.max() - xs.min())
     scaley = 1.0/(ys.max() - ys.min())
+    fig, ax = plt.subplots(figsize=(5, 15))
     plt.scatter(xs * scalex, ys * scaley, color='gainsboro')
     for i in ls:
         plt.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='r', alpha=0.5)

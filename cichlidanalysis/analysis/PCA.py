@@ -1,25 +1,24 @@
-from tkinter.filedialog import askdirectory
-from tkinter import *
-import os
 import copy
+import os
+from tkinter import *
+from tkinter.filedialog import askdirectory
 
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib.cm
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
-from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 from cichlidanalysis.analysis.processing import feature_daily
-from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.analysis.run_binned_als import setup_run_binned
 from cichlidanalysis.analysis.run_feature_vector import setup_feature_vector_data
 from cichlidanalysis.io.io_feature_vector import load_diel_pattern
-from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
-from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_2D_pc_space_orig, \
-    plot_variance_explained, plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space
+from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_variance_explained, \
+    plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, plot_2D_pc_space_label_species, plot_2D_pc_space_colour
+from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
+from cichlidanalysis.utils.timings import load_timings
+
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 
 
@@ -100,7 +99,14 @@ def fish_fv_pca_df(feature_v, ronco_data):
     return pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp
 
 
-def run_pca(rootdir, data_input, n_com = 10):
+def run_pca(rootdir, data_input, n_com=10):
+    """ Takes a 2D pandas df, z-scores to standardise the data, runs PCA with n_com data
+
+    :param rootdir: dir, here to save
+    :param data_input: 2D matrix,
+    :param n_com:
+    :return:
+    """
 
     # check that there's no nans
     if np.max(np.max(data_input.isnull())):
@@ -185,20 +191,36 @@ if __name__ == '__main__':
     averages_vp, date_time_obj_vp, sp_vp_combined, averages_spd, sp_spd_combined, averages_rest, sp_rest_combined, \
     averages_move, sp_move_combined = plot_ridge_plots(fish_tracks_bin, change_times_datetime,
                                                        rootdir, sp_metrics, tribe_col)
+    aves_ave_spd = feature_daily(averages_spd)
+    aves_ave_rest = feature_daily(averages_rest)
 
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
     pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
     pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
-    run_pca_df = pca_df_fv_sp
+    run_pca_df = aves_ave_spd.transpose()
     pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df)
 
+    # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
+    # finalDf['species'] = run_pca_df.index.to_list()
+
+    # just species aves_ave_spd_means
+    finalDf = finalDf.rename(columns={finalDf.columns[-1]: 'species'})
+    averages_t = averages.transpose()
+    averages_t = averages_t.reset_index().rename(columns={'index': 'species'})
+    finalDf = finalDf.merge(averages_t[['species', 'day_night_dif']], on='species', how='left')
+    finalDf = finalDf.merge(averages_t[['species', 'peak']], on='species', how='left')
+
+    plot_2D_pc_space_label_species(rootdir, finalDf, target=finalDf['species'])
+    # plot_2D_pc_space(rootdir, finalDf, target='target')
+    plot_2D_pc_space_colour(rootdir, finalDf, target='day_night_dif')
+    plot_2D_pc_space_colour(rootdir, finalDf, target='peak')
+
     finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
-    finalDf['species'] = run_pca_df.index.to_list()
 
     plot_variance_explained(rootdir, principalDf, pca)
-    plot_2D_pc_space(rootdir, finalDf, target='target')
+    plot_2D_pc_space(rootdir, finalDf, target='species')
     plot_3D_pc_space(rootdir, finalDf)
     plot_factor_loading_matrix(rootdir, loadings, top_pc=3)
     pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)

@@ -179,10 +179,10 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(rootdir, "total_rest_vs_spd_mean_night.png"))
     plt.close()
 
-    fig = plt.figure(figsize=(5, 5))
-    sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean')
-    plt.savefig(os.path.join(rootdir, "total_rest_vs_spd_max_mean.png"))
-    plt.close()
+    # fig = plt.figure(figsize=(5, 5))
+    # sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean')
+    # plt.savefig(os.path.join(rootdir, "total_rest_vs_spd_max_mean.png"))
+    # plt.close()
 
     plot_bout_lens_rest_day_night(rootdir, feature_v, diel_patterns)
     plot_dn_dif_rest_bouts(rootdir, feature_v, diel_patterns)
@@ -233,7 +233,7 @@ if __name__ == '__main__':
     feature_correlations(rootdir, feature_v_mean, fv_eco_sp_ave)
     plot_total_rest_ecospace(rootdir, fv_eco_sp_ave, ronco_data)
     plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
-    plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
+    # plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
     plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)

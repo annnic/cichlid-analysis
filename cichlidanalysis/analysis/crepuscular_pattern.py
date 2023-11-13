@@ -1,4 +1,5 @@
 import copy
+import os
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -53,6 +54,7 @@ def crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_ds, species):
             ax2.plot(peaks, x[peaks], "o", color="r")
             ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
             plt.title(species_name)
+        plt.savefig(os.path.join(rootdir, "cres_peaks_daily_{}.png".format(species_name)), dpi=1200)
     plt.close('all')
 
 
@@ -81,14 +83,11 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
         border_top_week = border_top_week * 200
         peak_prom = 7
 
-    for species_name in species:
-        date_form = DateFormatter("%H")
+    date_form = DateFormatter("%H")
 
+    for species_name in species:
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
-
-        # if feature == 'rest':
-        #     fish_feature = np.abs(fish_daily_ave_feature-1)
 
         fig1, ax1 = plt.subplots(figsize=(10, 5))
         sns.heatmap(fish_feature.T, cmap="Greys")
@@ -116,6 +115,16 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
         plt.xlabel("Time (h)")
         plt.ylabel("Speed (mm/s)")
         sns.despine(top=True, right=True)
+        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_{}.png".format(species_name)), dpi=1200)
+        plt.close()
+
+        ax1.xaxis.set_major_locator(MultipleLocator(24))
+        ax1.xaxis.set_major_formatter(date_form)
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        sns.despine(top=True, right=True)
+        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_heatmap_{}.png".format(species_name)), dpi=1200)
+
 
 
 def crepuscular_peaks(rootdir, feature, fish_tracks_ds, fish_diel_patterns_sp):
