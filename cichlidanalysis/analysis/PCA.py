@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 from cichlidanalysis.analysis.processing import feature_daily
@@ -99,11 +99,12 @@ def fish_fv_pca_df(feature_v, ronco_data):
     return pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp
 
 
-def run_pca(rootdir, data_input, n_com=10):
+def run_pca(rootdir, data_input, norm='zscore', n_com=10):
     """ Takes a 2D pandas df, z-scores to standardise the data, runs PCA with n_com data
 
     :param rootdir: dir, here to save
     :param data_input: 2D matrix,
+    :param norm: minmax or zscore
     :param n_com:
     :return:
     """
@@ -113,8 +114,14 @@ def run_pca(rootdir, data_input, n_com=10):
         print('Some nulls in the data, cannot run')
         return
 
-    # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
-    x = StandardScaler().fit_transform(data_input.values)
+    if norm == 'minmax':
+        # scale data between 0 and 1
+        min_max_scaler = MinMaxScaler()
+        x = min_max_scaler.fit_transform(data_input.values)
+    elif norm == 'zscore':
+        # z = (x - u) / s
+        # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
+        x = StandardScaler().fit_transform(data_input.values)
     mu = np.mean(data_input, axis=0)
 
     # run PCA
@@ -127,15 +134,16 @@ def run_pca(rootdir, data_input, n_com=10):
     principalDf = pd.DataFrame(data=principalComponents, columns=labels)
     finalDf = pd.concat([principalDf, data_input.index.to_series().reset_index(drop=True)], axis=1)
 
-    # reconstructing the fish series
-    # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
-    Xhat = np.dot(pca.transform(data_input)[:, :n_com], pca.components_[:n_com, :])
-    Xhat += mu
-    reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(reconstructed)
-    plt.savefig(os.path.join(rootdir, "reconstructed.png"), dpi=1000)
-    plt.close()
+    if norm == 'zscore':
+        # reconstructing the fish series
+        # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
+        Xhat = np.dot(pca.transform(data_input)[:, :n_com], pca.components_[:n_com, :])
+        Xhat += mu
+        reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
+        f, ax = plt.subplots(figsize=(10, 5))
+        plt.plot(reconstructed)
+        plt.savefig(os.path.join(rootdir, "reconstructed.png"), dpi=1000)
+        plt.close()
 
     # plot reconstruction of pc 'n'
     plot_reconstruct_pc(rootdir, data_input, pca, mu, 1)
@@ -196,11 +204,11 @@ if __name__ == '__main__':
 
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
-    pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
-    pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
+    # pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
+    # pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
-    run_pca_df = aves_ave_spd.transpose()
-    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df)
+    run_pca_df = aves_ave_spd
+    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df, norm='zscore')
 
     # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
     # finalDf['species'] = run_pca_df.index.to_list()
@@ -209,8 +217,25 @@ if __name__ == '__main__':
     finalDf = finalDf.rename(columns={finalDf.columns[-1]: 'species'})
     averages_t = averages.transpose()
     averages_t = averages_t.reset_index().rename(columns={'index': 'species'})
-    finalDf = finalDf.merge(averages_t[['species', 'day_night_dif']], on='species', how='left')
-    finalDf = finalDf.merge(averages_t[['species', 'peak']], on='species', how='left')
+    finalDf = finalDf.merge(averages_t[['species', 'day_night_dif', 'peak']], on='species', how='left')
+
+    # just species.t aves_ave_spd_means
+    averages_t = averages.transpose()
+    averages_t = averages_t.reset_index().rename(columns={'index': 'species'})
+    loadings_sp = loadings.reset_index().rename(columns={'index': 'species'})
+    loadings_sp = loadings_sp.merge(averages_t[['species', 'day_night_dif', 'peak']], on='species', how='left')
+
+    # save data:
+    loadings_sp.to_csv(os.path.join(rootdir, 'pca_loadings.csv'), sep=',', index=False, encoding='utf-8')
+
+    # pc1 vs day_night_dif
+    model, r_sq = run_linear_reg(loadings_sp.day_night_dif.astype(float), loadings_sp.pc1)
+    plt_lin_reg(rootdir, loadings_sp.day_night_dif.astype(float), loadings_sp.pc1, model, r_sq)
+
+    # pc2 vs peak
+    model, r_sq = run_linear_reg(loadings_sp.peak.astype(float), loadings_sp.pc2)
+    plt_lin_reg(rootdir, loadings_sp.peak.astype(float), loadings_sp.pc2, model, r_sq)
+
 
     plot_2D_pc_space_label_species(rootdir, finalDf, target=finalDf['species'])
     # plot_2D_pc_space(rootdir, finalDf, target='target')

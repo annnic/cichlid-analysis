@@ -119,6 +119,19 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     plt.close()
     return
 
+def plot_pc(rootdir, principalDf, list_pcs=['pc1']):
+    f, ax = plt.subplots(figsize=(5, 5))
+    cmap = matplotlib.cm.get_cmap('viridis')
+    for col_n, col in enumerate(list_pcs):
+        y = principalDf.loc[:, col]
+        plt.plot(y, c=cmap(col_n / len(list_pcs)), label=col)
+    plt.legend()
+    name = ''
+    name = name.join(str(e) for e in list_pcs)
+    plt.savefig(os.path.join(rootdir, "principalDf_{}.png".format(name)), dpi=1000)
+    plt.close()
+    return
+
 
 def plot_variance_explained(rootdir, principalDf, pca):
     f, ax = plt.subplots(figsize=(5, 5))
@@ -152,12 +165,13 @@ def plot_factor_loading_matrix(rootdir, loadings, top_pc=3):
     :return:
     """
     fig, ax = plt.subplots(figsize=(5, 15))
-    sns.heatmap(loadings.iloc[:, :top_pc], annot=True, cmap="seismic")
+    sns.heatmap(loadings.iloc[:, :top_pc], annot=True, cmap="seismic", yticklabels=True)
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "factor_loading_matrix.png"))
     plt.close()
 
-    sns.clustermap(loadings.iloc[:, :top_pc], annot=True, cmap="seismic", figsize=(5, 15), col_cluster=False)
+    sns.clustermap(loadings.iloc[:, :top_pc], annot=True, cmap="seismic", figsize=(5, 15), col_cluster=False,
+                   yticklabels=True)
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.png"))
     plt.close()
@@ -179,11 +193,11 @@ def pc_loadings_on_2D(rootdir, principalComponents, coeff, loadings, top_n):
     ys = principalComponents[:, 1]
     scalex = 1.0/(xs.max() - xs.min())
     scaley = 1.0/(ys.max() - ys.min())
-    fig, ax = plt.subplots(figsize=(5, 15))
-    plt.scatter(xs * scalex, ys * scaley, color='gainsboro')
+    fig, ax = plt.subplots(figsize=(5, 5))
+    ax.scatter(xs * scalex, ys * scaley, color='gainsboro')
     for i in ls:
-        plt.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='r', alpha=0.5)
-        plt.text(coeff[i, 0] * 1.15, coeff[i, 1] * 1.15, loadings.index[i], color='k', ha='center', va='center',
+        ax.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='r', alpha=0.5)
+        ax.text(coeff[i, 0] * 1.15, coeff[i, 1] * 1.15, loadings.index[i], color='k', ha='center', va='center',
                  fontsize=5)
     # plt.xlim(-1, 1)
     # plt.ylim(-1, 1)
