@@ -93,12 +93,14 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     seven_am = set(np.where(data_input.index.to_series().reset_index(drop=True) == '07:00')[0])
     seven_pm = set(np.where(data_input.index.to_series().reset_index(drop=True) == '19:00')[0])
     six_thirty_pm = set(np.where(data_input.index.to_series().reset_index(drop=True) == '18:30')[0])
+    seven_thirty_pm = set(np.where(data_input.index.to_series().reset_index(drop=True) == '19:30')[0])
     finalDf['daynight'] = 'night'
     finalDf.loc[day, 'daynight'] = 'day'
     finalDf.loc[six_thirty_am, 'daynight'] = 'six_thirty_am'
     finalDf.loc[six_thirty_pm, 'daynight'] = 'six_thirty_pm'
     finalDf.loc[seven_am, 'daynight'] = 'seven_am'
     finalDf.loc[seven_pm, 'daynight'] = 'seven_pm'
+    finalDf.loc[seven_thirty_pm, 'daynight'] = 'seven_thirty_pm'
 
     cmap = matplotlib.cm.get_cmap('twilight_shifted')
     fig = plt.figure(figsize=(8, 8))
@@ -118,6 +120,7 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     plt.savefig(os.path.join(rootdir, "PCA.png"), dpi=1000)
     plt.close()
     return
+
 
 def plot_pc(rootdir, principalDf, list_pcs=['pc1']):
     f, ax = plt.subplots(figsize=(5, 5))

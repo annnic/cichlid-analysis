@@ -15,11 +15,13 @@ from cichlidanalysis.analysis.run_binned_als import setup_run_binned
 from cichlidanalysis.analysis.run_feature_vector import setup_feature_vector_data
 from cichlidanalysis.io.io_feature_vector import load_diel_pattern
 from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_variance_explained, \
-    plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, plot_2D_pc_space_label_species, plot_2D_pc_space_colour
+    plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, \
+    plot_2D_pc_space_label_species, plot_2D_pc_space_colour, plot_pc, plot_2D_pc_space_orig
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
 
-# insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+# inspired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+# and https://builtin.com/machine-learning/pca-in-python
 
 
 def reorganise_behav(fish_tracks_bin, feature, feature_id, row_id='FishID', col_id='time_of_day_dt'):
@@ -118,10 +120,13 @@ def run_pca(rootdir, data_input, norm='zscore', n_com=10):
         # scale data between 0 and 1
         min_max_scaler = MinMaxScaler()
         x = min_max_scaler.fit_transform(data_input.values)
+        data_input_norm = pd.DataFrame(x, columns=data_input.columns, index=data_input.index)
     elif norm == 'zscore':
         # z = (x - u) / s
         # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
         x = StandardScaler().fit_transform(data_input.values)
+        data_input_norm = pd.DataFrame(x, columns=data_input.columns, index=data_input.index)
+
     mu = np.mean(data_input, axis=0)
 
     # run PCA
@@ -156,7 +161,7 @@ def run_pca(rootdir, data_input, norm='zscore', n_com=10):
     # plt.savefig(os.path.join(rootdir, "reconstructed_Astbur.png"), dpi=1000)
     # plt.close()
 
-    return pca, labels, loadings, principalDf, finalDf, principalComponents
+    return pca, labels, loadings, finalDf, principalComponents, data_input_norm
 
 
 def replace_cat_with_nums(df, col_names):
@@ -208,7 +213,23 @@ if __name__ == '__main__':
     # pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
     run_pca_df = aves_ave_spd
-    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df, norm='zscore')
+    norm_method = 'zscore'
+    pca, labels, loadings, finalDf, principalComponents, data_input_norm = run_pca(rootdir, run_pca_df, norm=norm_method)
+
+    # normalised data input
+    from matplotlib.axis import Axis
+    from matplotlib.ticker import MaxNLocator
+    import matplotlib.ticker as ticker
+
+    f, ax = plt.subplots(figsize=(5, 5))
+    plt.plot(data_input_norm)
+    ax.set_xlabel('Time', fontsize=15)
+    # Axis.set_major_locator(ax.xaxis, years)
+    # ax.set_major_locator(MaxNLocator(integer=True))
+    tick_spacing = 7
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+    plt.savefig(os.path.join(rootdir, "normalised_input_traces_{}.png".format(norm_method)), dpi=1000)
+    plt.close()
 
     # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
     # finalDf['species'] = run_pca_df.index.to_list()
@@ -228,6 +249,8 @@ if __name__ == '__main__':
     # save data:
     loadings_sp.to_csv(os.path.join(rootdir, 'pca_loadings.csv'), sep=',', index=False, encoding='utf-8')
 
+    plot_pc(rootdir, finalDf, list_pcs=['pc1'])
+
     # pc1 vs day_night_dif
     model, r_sq = run_linear_reg(loadings_sp.day_night_dif.astype(float), loadings_sp.pc1)
     plt_lin_reg(rootdir, loadings_sp.day_night_dif.astype(float), loadings_sp.pc1, model, r_sq)
@@ -239,12 +262,13 @@ if __name__ == '__main__':
 
     plot_2D_pc_space_label_species(rootdir, finalDf, target=finalDf['species'])
     # plot_2D_pc_space(rootdir, finalDf, target='target')
+    plot_2D_pc_space_orig(rootdir, run_pca_df, finalDf)
     plot_2D_pc_space_colour(rootdir, finalDf, target='day_night_dif')
     plot_2D_pc_space_colour(rootdir, finalDf, target='peak')
 
     finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
 
-    plot_variance_explained(rootdir, principalDf, pca)
+    plot_variance_explained(rootdir, finalDf, pca)
     plot_2D_pc_space(rootdir, finalDf, target='species')
     plot_3D_pc_space(rootdir, finalDf)
     plot_factor_loading_matrix(rootdir, loadings, top_pc=3)
