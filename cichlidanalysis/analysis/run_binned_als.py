@@ -3,8 +3,6 @@ import os
 
 import datetime as dt
 
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
@@ -17,7 +15,8 @@ from cichlidanalysis.analysis.processing import feature_daily, species_feature_f
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
 from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr, \
     plot_corr_coefs, get_corr_coefs_daily, week_corr
-from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks, crespuscular_weekly_fish
+from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks, crespuscular_weekly_fish, \
+    crespuscular_daily_ave_fish
 from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, \
     run_species_pattern_cluster_weekly
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
@@ -85,7 +84,6 @@ if __name__ == '__main__':
     aves_ave_rest.columns = species_sixes
     aves_ave_move.columns = species_sixes
 
-    plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime)
 
     # ###########################
     ## correlations ##
@@ -167,7 +165,7 @@ if __name__ == '__main__':
     plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
     # for plotting peaks of an individual species
-    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, )
+    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])
     crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])
 
     # include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',

@@ -166,14 +166,13 @@ def cluster_daily_ave(rootdir, aves_ave_spd, label, link_method='single', max_d=
     return
 
 
-def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
-    date_form = DateFormatter('%H:%M:%S')
+def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings):
+    date_form = DateFormatter('%H')
     fish_IDs = fish_tracks_bin['FishID'].unique()
     species = fish_tracks_bin['species'].unique()
     feature = 'speed_mm'
     span_max = 100
     day_n = 0
-    loadings = pd.read_csv(os.path.join(rootdir, 'pca_loadings.csv'))
 
     # font sizes
     SMALL_SIZE = 6
@@ -187,11 +186,11 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
         df_scaled = (data_minmax + end_val) / (end_val + end_val)
     else:
         print('need to check scaling')
-    rows = 7
-    cols = 10
+    rows = 5
+    cols = 12
     n_plots = rows*cols
 
-    fig, axes = plt.subplots(nrows=7, ncols=10, figsize=(7.3, 7.3))
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(8, 5))
     # Flatten the 2D array of subplots to make it easier to iterate
     axes = axes.flatten()
 
@@ -207,17 +206,17 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
         daily_feature = sp_spd_ave.mean(axis=1)
 
         # make datetime consistent, also make the points the middle of the bin
-        time_dif = dt.datetime.strptime("1970-1-2 23:45:00", '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime(0, '%H:%M')
+        time_dif = dt.datetime.strptime("1970-1-1 23:45:00", '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime('00:00', '%H:%M')
         date_time_obj = []
         for i in daily_feature.index:
             date_time_obj.append(dt.datetime.strptime(i, '%H:%M')+time_dif)
 
         # for day_n in range(days_to_plot):
-        night_col = 'grey'
+        night_col = 'lightblue'
         axes[species_n].fill_between(
-            [dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S') + timedelta(days=day_n),
+            [dt.datetime.strptime("1970-1-1 23:30:00", '%Y-%m-%d %H:%M:%S') + timedelta(days=day_n),
              change_times_datetime[0] + timedelta(days=day_n)], [span_max, span_max], 0,
-            color=night_col, alpha=0.1, linewidth=0, zorder=1)
+            color=night_col, alpha=0.5, linewidth=0, zorder=1)
         axes[species_n].fill_between([change_times_datetime[0] + timedelta(days=day_n),
                                   change_times_datetime[1] + timedelta(days=day_n)], [span_max, span_max], 0,
                                  color='wheat',
@@ -227,31 +226,49 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
             (days=day_n)], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
         axes[species_n].fill_between(
             [change_times_datetime[3] + timedelta(days=day_n), change_times_datetime[4] + timedelta
-            (days=day_n)], [span_max, span_max], 0, color=night_col, alpha=0.1, linewidth=0)
+            (days=day_n)], [span_max, span_max], 0, color=night_col, alpha=0.5, linewidth=0)
 
         # plot speed data
-        axes[species_n].plot(date_time_obj, (daily_feature + sp_spd_ave_std), color='lightgrey')
-        axes[species_n].plot(date_time_obj, (daily_feature - sp_spd_ave_std), color='lightgrey')
-        cmap = plt.get_cmap('RdBu')
-        # cmap = plt.get_cmap('flare_r')
-        axes[species_n].plot(date_time_obj, daily_feature, lw=1.5, color=cmap(df_scaled.iloc[species_n]))
+        axes[species_n].plot(date_time_obj, (daily_feature + sp_spd_ave_std), lw=1, color='lightgrey')
+        axes[species_n].plot(date_time_obj, (daily_feature - sp_spd_ave_std), lw=1, color='lightgrey')
+        # cmap = plt.get_cmap('RdBu')
+        # cmap(df_scaled.iloc[species_n])
+        axes[species_n].plot(date_time_obj, daily_feature, lw=1, color='#1f77b4')
         axes[species_n].set_title(species_name, y=0.85, fontsize=MEDIUM_SIZE)
 
-        if species_n == 60:
-            axes[species_n].set_xlabel("Time", fontsize=MEDIUM_SIZE)
-            axes[species_n].xaxis.set_major_locator(MultipleLocator(20))
+        if species_n % cols == 0 and species_n >= cols*(rows-1):
+            axes[species_n].set_xlabel("Time (h)", fontsize=MEDIUM_SIZE)
+            axes[species_n].xaxis.set_major_locator(MultipleLocator(0.25))
             axes[species_n].xaxis.set_major_formatter(date_form)
-            # axes[species_n].yaxis.tick_right()
-            # axes[species_n].yaxis.set_label_position("right")
-            yticks_values = [-0.5, 0, 0.5, 1]
             axes[species_n].set_yticks([0, 25, 50, 75])
             axes[species_n].tick_params(axis='y', labelsize=MEDIUM_SIZE)
             axes[species_n].set_ylabel('Speed mm/s', fontsize=MEDIUM_SIZE)
             axes[species_n].spines['top'].set_visible(False)
             axes[species_n].spines['right'].set_visible(False)
-            axes[species_n].spines['bottom'].set_visible(False)
-            axes[species_n].spines['left'].set_visible(False)
+            for axis in ['bottom', 'left']:
+                axes[species_n].spines[axis].set_linewidth(0.5)
+            axes[species_n].tick_params(width=0.5)
+            plt.setp(axes[species_n].xaxis.get_majorticklabels(), rotation=70)
+        elif species_n % cols == 0:
 
+            axes[species_n].set_yticks([0, 25, 50, 75])
+            axes[species_n].set_xticks([])
+            axes[species_n].tick_params(axis='y', labelsize=MEDIUM_SIZE)
+            axes[species_n].spines['top'].set_visible(False)
+            axes[species_n].spines['right'].set_visible(False)
+            axes[species_n].spines['bottom'].set_visible(False)
+            axes[species_n].spines['left'].set_linewidth(0.5)
+            axes[species_n].tick_params(width=0.5)
+        elif species_n > cols*(rows-1):
+            axes[species_n].set_yticks([])
+            axes[species_n].xaxis.set_major_locator(MultipleLocator(0.25))
+            axes[species_n].xaxis.set_major_formatter(date_form)
+            axes[species_n].spines['top'].set_visible(False)
+            axes[species_n].spines['right'].set_visible(False)
+            axes[species_n].spines['left'].set_visible(False)
+            axes[species_n].spines['bottom'].set_linewidth(0.5)
+            axes[species_n].tick_params(width=0.5)
+            plt.setp(axes[species_n].xaxis.get_majorticklabels(), rotation=70)
         else:
             # remove borders, axis ticks, and labels
             axes[species_n].set_xticklabels([])
@@ -263,6 +280,8 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
             axes[species_n].spines['right'].set_visible(False)
             axes[species_n].spines['bottom'].set_visible(False)
             axes[species_n].spines['left'].set_visible(False)
+        axes[species_n].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S'))
+        axes[species_n].set_ylim(0, span_max)
     for empty_plots in np.arange(n_plots-(n_plots-len(sorted_loadings.species)), n_plots):
         axes[empty_plots].set_xticklabels([])
         axes[empty_plots].set_xticks([])
@@ -273,9 +292,10 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime):
         axes[empty_plots].spines['right'].set_visible(False)
         axes[empty_plots].spines['bottom'].set_visible(False)
         axes[empty_plots].spines['left'].set_visible(False)
+
     # want to add cmap
     # cax = axes[empty_plots-1].scatter(data_minmax, data_minmax, cmap=cmap)
     # fig.colorbar(cax, ax=axes[empty_plots], orientation='vertical')
-    plt.savefig(os.path.join(rootdir, 'speed_30min_ave_ave-stdev_all.svg'), format='svg')
+    plt.savefig(os.path.join(rootdir, 'speed_30min_ave_ave-stdev_all.pdf'), format='pdf', dpi=350)
     plt.close()
     return

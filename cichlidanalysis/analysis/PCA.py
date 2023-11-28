@@ -16,9 +16,11 @@ from cichlidanalysis.analysis.run_feature_vector import setup_feature_vector_dat
 from cichlidanalysis.io.io_feature_vector import load_diel_pattern
 from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_variance_explained, \
     plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, \
-    plot_2D_pc_space_label_species, plot_2D_pc_space_colour, plot_pc, plot_2D_pc_space_orig, plot_norm_traces
+    plot_2D_pc_space_label_species, plot_2D_pc_space_colour, plot_pc, plot_2D_pc_space_orig, plot_norm_traces, \
+    plot_temporal_pcs
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots
 
 # inspired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 # and https://builtin.com/machine-learning/pca-in-python
@@ -213,9 +215,6 @@ if __name__ == '__main__':
         feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][[feature, 'FishID', 'ts']]
         sp_feature = feature_i.pivot(columns='FishID', values=feature, index='ts')
 
-        # # get time of day so that the same tod for each fish can be averaged
-        # sp_feature['time_of_day'] = sp_feature.apply(lambda row: str(row.name)[11:16], axis=1)
-
         sp_feature_daily = feature_daily(sp_feature)
         if species_n == 0:
             sp_feature_combined_weekly = sp_feature
@@ -229,41 +228,35 @@ if __name__ == '__main__':
 
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
+    ########### PCA matrix setup
     # pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
     # pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
+    ########### other preprocessed/setups
     # # log transform
     # aves_ave_spd_log = np.log(aves_ave_spd)
-
     # aves_ave_spd.transpose() = ts as feature
     # aves_ave_spd = species as features
     # sp_feature_combined_daily = individual fish as features
+
+    # aves_ave_spd with zscore is the input used for the paper
     run_pca_df = aves_ave_spd
     norm_method = 'zscore'
     pca, labels, loadings, finalDf, principalComponents, data_input_norm = run_pca(rootdir, run_pca_df, norm=norm_method)
 
-    # normalised data input
+    # plot normalised data input
     plot_norm_traces(rootdir, data_input_norm, norm_method)
 
     # independent plots
     plot_3D_pc_space(rootdir, run_pca_df, finalDf, pca)
-    plot_factor_loading_matrix(rootdir, loadings, top_pc=3)
+    plot_factor_loading_matrix(rootdir, loadings, top_pc=2)
     pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
-    plot_variance_explained(rootdir, finalDf, pca)
-    plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2', 'pc3', 'pc4', 'pc5'])
+    plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2'])
 
-    # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
-    # finalDf['species'] = run_pca_df.index.to_list()
-
-    # # just for species aves_ave_spd_means, where ts are the features
-    # finalDf = finalDf.rename(columns={finalDf.columns[-1]: 'species'})
-    # averages_t = averages.transpose()
-    # averages_t = averages_t.reset_index().rename(columns={'index': 'species'})
-    # finalDf = finalDf.merge(averages_t[['species', 'day_night_dif', 'peak']], on='species', how='left')
-    # plot_2D_pc_space_colour(rootdir, finalDf, target='day_night_dif')
-    # plot_2D_pc_space_colour(rootdir, finalDf, target='peak')
-    # plot_2D_pc_space(rootdir, finalDf, target='species')
-    # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
+    # figure 1
+    plot_variance_explained(rootdir, pca)
+    plot_2D_pc_space_orig(rootdir, run_pca_df, finalDf)
+    plot_temporal_pcs(rootdir, finalDf, change_times_datetime)
 
     # just species.t aves_ave_spd_means, where species are the features
     averages_t = averages.transpose()
@@ -282,83 +275,5 @@ if __name__ == '__main__':
     model, r_sq = run_linear_reg(loadings_sp.peak.astype(float), loadings_sp.pc2)
     plt_lin_reg(rootdir, loadings_sp.peak.astype(float), loadings_sp.pc2, model, r_sq)
 
-    plot_2D_pc_space_label_species(rootdir, finalDf, target=finalDf['target'])
-    # plot_2D_pc_space(rootdir, finalDf, target='target')
-    plot_2D_pc_space_orig(rootdir, run_pca_df, finalDf)
+    plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp)
 
-
-    loadings = loadings.reset_index().rename(columns={'index': 'features'})
-    pca_df = loadings.merge(diel_patterns, on='features')
-    model, r_sq = run_linear_reg(pca_df.pc1, pca_df.day_night_dif)
-    plt_lin_reg(rootdir, pca_df.pc1, pca_df.day_night_dif, model, r_sq)
-
-    model, r_sq = run_linear_reg(pca_df.pc2, pca_df.peak)
-    plt_lin_reg(rootdir, pca_df.pc2, pca_df.peak, model, r_sq)
-
-
-# plot the temporal pcs
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import (MultipleLocator)
-    from matplotlib.dates import DateFormatter
-    from datetime import timedelta
-    import datetime as dt
-
-    from cichlidanalysis.utils.timings import output_timings
-
-    date_form = DateFormatter('%H:%M')
-    day_n = 0
-    span_max = 18
-    # font sizes
-    SMALL_SIZE = 6
-    MEDIUM_SIZE = 8
-    BIGGER_SIZE = 10
-
-    # make datetime consistent, also make the points the middle of the bin
-    time_dif = dt.datetime.strptime("1970-1-2 23:45:00", '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime("00:00", '%H:%M')
-    date_time_obj = []
-    for i in finalDf.time_of_day:
-        date_time_obj.append(dt.datetime.strptime(i, '%H:%M') + time_dif)
-    pc_cols = {'pc1': '#1f77b4', 'pc2': '#ff7f0e', 'pc3': '#2ca02c', 'pc4': '#d62728', 'pc5': '#9467bd'}
-    night_col = 'grey'
-    pc_set = ['pc1', 'pc2', 'pc3', 'pc4', 'pc5']
-
-    fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(7.3, 1))
-    # Flatten the 2D array of subplots to make it easier to iterate
-    axes = axes.flatten()
-
-
-    for pc_n, pc in enumerate(pc_set):
-        axes[pc_n].fill_between(
-            [dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S') + timedelta(days=day_n),
-             change_times_datetime[0] + timedelta(days=day_n)], [span_max, span_max], 0,
-            color=night_col, alpha=0.1, linewidth=0, zorder=1)
-        axes[pc_n].fill_between([change_times_datetime[0] + timedelta(days=day_n),
-                                      change_times_datetime[1] + timedelta(days=day_n)], [span_max, span_max], 0,
-                                     color='wheat',
-                                     alpha=0.5, linewidth=0)
-        axes[pc_n].fill_between(
-            [change_times_datetime[2] + timedelta(days=day_n), change_times_datetime[3] + timedelta
-            (days=day_n)], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
-        axes[pc_n].fill_between(
-            [change_times_datetime[3] + timedelta(days=day_n), change_times_datetime[4] + timedelta
-            (days=day_n)], [span_max, span_max], 0, color=night_col, alpha=0.1, linewidth=0)
-
-        axes[pc_n].plot(date_time_obj, finalDf.loc[:, pc], lw=1, color=pc_cols[pc])
-        axes[pc_n].set_title(species_name, y=0.85, fontsize=MEDIUM_SIZE)
-
-        axes[pc_n].set_xlabel("Time", fontsize=MEDIUM_SIZE)
-        axes[pc_n].xaxis.set_major_locator(MultipleLocator(20))
-        axes[pc_n].xaxis.set_major_formatter(date_form)
-        yticks_values = [-0.5, 0, 0.5, 1]
-        axes[pc_n].set_yticks([0, 25, 50, 75])
-        axes[pc_n].tick_params(axis='y', labelsize=MEDIUM_SIZE)
-        axes[pc_n].set_ylabel('Speed mm/s', fontsize=MEDIUM_SIZE)
-        axes[pc_n].spines['top'].set_visible(False)
-        axes[pc_n].spines['right'].set_visible(False)
-        axes[pc_n].spines['bottom'].set_visible(False)
-        axes[pc_n].spines['left'].set_visible(False)
-
-        plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, 'temporal_pcs.png'), format='png')
-        plt.close()

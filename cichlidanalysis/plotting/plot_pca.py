@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 import matplotlib.cm
 import matplotlib.ticker as ticker
 import matplotlib
+from matplotlib.ticker import (MultipleLocator)
+from matplotlib.dates import DateFormatter
+from datetime import timedelta
+import datetime as dt
 from mpl_toolkits.mplot3d import Axes3D
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 
@@ -103,13 +107,16 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     finalDf['daynight'] = 'dark'
     finalDf.loc[day, 'daynight'] = 'light'
     # finalDf.loc[six_thirty_am, 'daynight'] = '06:30'
-    finalDf.loc[seven_am, 'daynight'] = 'dawn'
-    finalDf.loc[six_thirty_pm, 'daynight'] = 'dusk'
+    # finalDf.loc[seven_am, 'daynight'] = 'dawn'
+    # finalDf.loc[six_thirty_pm, 'daynight'] = 'dusk'
+    finalDf.loc[seven_am, 'daynight'] = 'ramping'
+    finalDf.loc[six_thirty_pm, 'daynight'] = 'ramping'
     # finalDf.loc[seven_pm, 'daynight'] = '19:00'
     # finalDf.loc[seven_thirty_pm, 'daynight'] = '19:30'
 
     cmap = matplotlib.cm.get_cmap('twilight_shifted')
-    colors = {'dark': 'midnightblue', 'light': 'gold', 'dawn': 'lightcoral', 'dusk': 'coral'}
+    # colors = {'dark': '#535353', 'light': 'gold', 'dawn': 'lightcoral', 'dusk': 'coral'}
+    colors = {'dark': '#535353', 'light': 'gold', 'ramping': '#FEB25E'}
 
     fig = plt.figure(figsize=(2, 2))
     ax = fig.add_subplot(1, 1, 1)
@@ -129,7 +136,7 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
         plt.annotate(label, (finalDf.pc1[time_i], finalDf.pc2[time_i]), textcoords="offset points", xytext=(0, 3),
                      ha='center', fontsize=SMALLEST_SIZE)
 
-    ax.set_xlim([-8, 9])
+    ax.set_xlim([-8, 12])
     ax.set_ylim([-5, 20])
     ax.legend(timepoints)
     ax.set_axisbelow(True)
@@ -137,10 +144,12 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     # change all spines
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     # tick width
     ax.tick_params(width=0.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "pca_2D_figure.png"), dpi=1000)
+    plt.savefig(os.path.join(rootdir, "pca_2D_figure.pdf"), dpi=350)
     plt.close()
     return
 
@@ -159,19 +168,10 @@ def plot_pc(rootdir, principalDf, list_pcs=['pc1']):
     return
 
 
-def plot_variance_explained(rootdir, principalDf, pca):
+def plot_variance_explained(rootdir, pca):
+    SMALLEST_SIZE = 5
     SMALL_SIZE = 6
-    f, ax = plt.subplots(figsize=(5, 5))
-    cmap = matplotlib.cm.get_cmap('flare')
-    x = np.arange(0, principalDf.shape[0])
-    for col_n, col in enumerate(principalDf.columns):
-        y = principalDf.loc[:, col]
-        plt.plot(y, c=cmap(col_n / principalDf.shape[1]), label=col)
-    plt.legend()
-    plt.savefig(os.path.join(rootdir, "principalDf.png"), dpi=1000)
-    plt.close()
-
-    f, ax = plt.subplots(figsize=(1.5, 1.5))
+    f, ax = plt.subplots(figsize=(1, 1))
     plt.bar(np.arange(1, len(pca.explained_variance_ratio_)+1), pca.explained_variance_ratio_*100, color='lightgrey')
     plt.plot(np.arange(1, len(pca.explained_variance_ratio_)+1), np.cumsum(pca.explained_variance_ratio_*100),
              color='grey', marker='o', linestyle='-', linewidth=1, markersize=1)
@@ -183,10 +183,10 @@ def plot_variance_explained(rootdir, principalDf, pca):
     # tick width
     ax.tick_params(width=0.5)
 
-    ax.set_xlabel('Principal component', fontsize=SMALL_SIZE)
-    ax.set_ylabel('Variance explained (%)', fontsize=SMALL_SIZE)
+    ax.set_xlabel('Principal component', fontsize=SMALLEST_SIZE)
+    ax.set_ylabel('Variance explained (%)', fontsize=SMALLEST_SIZE)
     ax.set_xticks([1, 3, 5, 7, 9])
-    ax.tick_params(axis='both', labelsize=SMALL_SIZE)
+    ax.tick_params(axis='both', labelsize=SMALLEST_SIZE)
     # Decrease the offset for tick labels on all axes
     ax.xaxis.labelpad = 0.5
     ax.yaxis.labelpad = 0.5
@@ -195,7 +195,7 @@ def plot_variance_explained(rootdir, principalDf, pca):
     ax.tick_params(axis='x', pad=0.5)
     ax.tick_params(axis='y', pad=0.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "explained_variance_.png"), dpi=300)
+    plt.savefig(os.path.join(rootdir, "explained_variance_.pdf"), dpi=350)
     plt.close()
     return
 
@@ -214,10 +214,15 @@ def plot_factor_loading_matrix(rootdir, loadings, top_pc=3):
     plt.savefig(os.path.join(rootdir, "factor_loading_matrix.png"))
     plt.close()
 
-    sns.clustermap(loadings.iloc[:, :top_pc], annot=True, cmap="seismic", figsize=(5, 15), col_cluster=False,
-                   yticklabels=True)
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.png"))
+    SMALLEST_SIZE = 5
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    g = sns.clustermap(loadings.iloc[:, :top_pc], cmap="PiYG", figsize=(1, 6), col_cluster=False,
+                   yticklabels=True, method='ward', cbar_kws={'label': 'PC loading'})
+    # annot=True,
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=SMALLEST_SIZE)
+    # plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.png"), dpi=350)
     plt.close()
     return
 
@@ -345,26 +350,6 @@ def plot_3D_pc_space(rootdir, data_input, finalDf, pca):
     return
 
 
-# def plot_2D_pca_figure(rootdir, finalDf):
-#     cmap = matplotlib.cm.get_cmap('twilight_shifted')
-#     fig = plt.figure(figsize=(8, 8))
-#     ax = fig.add_subplot(1, 1, 1)
-#     ax.set_xlabel('Principal Component 1', fontsize=15)
-#     ax.set_ylabel('Principal Component 2', fontsize=15)
-#     ax.set_title('2 component PCA', fontsize=20)
-#     times = finalDf.daynight
-#     timepoints = times.unique()
-#     # colors = ['r', 'g', 'b']
-#     for time_n, time in enumerate(timepoints):
-#         indicesToKeep = finalDf['daynight'] == time
-#         ax.scatter(finalDf.loc[indicesToKeep, 'pc1'], finalDf.loc[indicesToKeep, 'pc2'],
-#                    c=cmap(time_n / len(timepoints)), s=50)
-#     ax.legend(timepoints)
-#     ax.grid()
-#     plt.savefig(os.path.join(rootdir, "pca_2D_figure.png"), dpi=1000)
-#     plt.close()
-
-
 def plot_norm_traces(rootdir, data_input_norm, norm_method):
     f, ax = plt.subplots(figsize=(5, 5))
     plt.plot(data_input_norm)
@@ -372,5 +357,78 @@ def plot_norm_traces(rootdir, data_input_norm, norm_method):
     tick_spacing = 7
     ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
     plt.savefig(os.path.join(rootdir, "normalised_input_traces_{}.png".format(norm_method)), dpi=1000)
+    plt.close()
+    return
+
+
+def plot_temporal_pcs(rootdir, finalDf, change_times_datetime):
+    # plot the temporal pcs
+    date_form = DateFormatter('%H:%M')
+    day_n = 0
+    span_max = 17
+    span_min = -8
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+
+    # make datetime consistent, also make the points the middle of the bin
+    time_dif = dt.datetime.strptime("1970-1-2 00:15:00", '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime("00:00", '%H:%M')
+    date_time_obj = []
+    for i in finalDf.time_of_day:
+        date_time_obj.append(dt.datetime.strptime(i, '%H:%M') + time_dif)
+    # pc_cols = {'pc1': '#1f77b4', 'pc2': '#ff7f0e', 'pc3': '#2ca02c', 'pc4': '#d62728', 'pc5': '#9467bd'}
+    pc_cols = {'pc1': 'k', 'pc2': 'k', 'pc3': 'k', 'pc4': 'k', 'pc5': 'k'}
+    night_col = 'lightblue'
+    pc_set = ['pc1', 'pc2']
+
+    fig, axes = plt.subplots(nrows=1, ncols=len(pc_set), figsize=(3, 1.5))
+    # Flatten the 2D array of subplots to make it easier to iterate
+    axes = axes.flatten()
+
+    for pc_n, pc in enumerate(pc_set):
+        axes[pc_n].fill_between(
+            [dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S') + timedelta(days=day_n),
+             change_times_datetime[0] + timedelta(days=day_n)], [span_max, span_max], span_min,
+            color=night_col, alpha=0.5, linewidth=0, zorder=1)
+        axes[pc_n].fill_between([change_times_datetime[0] + timedelta(days=day_n),
+                                 change_times_datetime[1] + timedelta(days=day_n)], [span_max, span_max], span_min,
+                                color='wheat',
+                                alpha=0.5, linewidth=0)
+        axes[pc_n].fill_between(
+            [change_times_datetime[2] + timedelta(days=day_n), change_times_datetime[3] + timedelta
+            (days=day_n)], [span_max, span_max], span_min, color='wheat', alpha=0.5, linewidth=0)
+        axes[pc_n].fill_between(
+            [change_times_datetime[3] + timedelta(days=day_n), change_times_datetime[4] + timedelta
+            (days=day_n)], [span_max, span_max], span_min, color=night_col, alpha=0.5, linewidth=0)
+
+        axes[pc_n].plot(date_time_obj, finalDf.loc[:, pc], lw=0.5, color=pc_cols[pc])
+        axes[pc_n].set_title(pc, y=0.85, fontsize=SMALL_SIZE)
+
+        if pc_n == 0:
+            axes[pc_n].set_yticks([-5, 0, 5, 10, 15])
+            axes[pc_n].tick_params(axis='y', labelsize=SMALL_SIZE)
+            axes[pc_n].set_ylabel('Title', fontsize=SMALL_SIZE)
+        else:
+            axes[pc_n].set_yticks([])
+        axes[pc_n].set_xlim(dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S'),
+                            dt.datetime.strptime("1970-1-3 00:00:01", '%Y-%m-%d %H:%M:%S'))
+        axes[pc_n].set_ylim(span_min, span_max)
+        # axes[pc_n].set_xticks([dt.datetime.strptime("1970-1-2 00:06:30", '%Y-%m-%d %H:%M:%S')])
+
+        axes[pc_n].set_xlabel("Time", fontsize=SMALL_SIZE)
+        axes[pc_n].xaxis.set_major_locator(MultipleLocator(0.25))
+        axes[pc_n].xaxis.set_major_formatter(date_form)
+        # axes[pc_n].set_xticklabels(axes[pc_n].get_xticks(), rotation=45)
+        # yticks_values = [-0.5, 0, 0.5, 1]
+        for axis in ['top', 'bottom', 'left', 'right']:
+            axes[pc_n].spines[axis].set_linewidth(0.5)
+        axes[pc_n].spines['top'].set_visible(False)
+        axes[pc_n].spines['right'].set_visible(False)
+        axes[pc_n].tick_params(width=0.5)
+        plt.setp(axes[pc_n].xaxis.get_majorticklabels(), rotation=70)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, 'temporal_pcs.pdf'), format='pdf', dpi=350)
     plt.close()
     return
