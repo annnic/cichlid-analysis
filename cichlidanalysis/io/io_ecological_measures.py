@@ -18,7 +18,7 @@ def get_meta_paths():
     # https://www.nature.com/articles/s41586-020-2930-4#Sec30
 
     # path for cichlid meta
-    cichlid_meta_path = os.path.join(code_path, "example_data", "cichlid_meta_20220428.csv")
+    cichlid_meta_path = os.path.join(code_path, "example_data", "cichlid_meta_20231129.csv")
 
     # voucher_key_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/01_specimen_voucher_key.csv"
     # pigmentation_pattern_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_scores_pigmentation_pattern.csv"

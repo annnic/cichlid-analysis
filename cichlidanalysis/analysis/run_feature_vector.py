@@ -25,7 +25,7 @@ from cichlidanalysis.plotting.plot_bouts import plot_bout_lens_rest_day_night, p
     plot_bout_lens_non_rest_day_night, plot_dn_dif_non_rest_bouts, rest_bouts_hists
 from cichlidanalysis.plotting.plot_eco_traits import plot_ecospace_vs_temporal_guilds, \
     plot_d15N_d13C_diet_guilds, plot_diet_guilds_hist, plot_total_rest_vs_diet_significance, \
-    plot_ecospace_vs_temporal_guilds_density
+    plot_ecospace_vs_temporal_guilds_density, plot_ecospace_vs_feature
 
 
 # debug pycharm problem
@@ -99,6 +99,7 @@ def setup_feature_vector_data(rootdir):
 if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
     rootdir = select_dir_path()
+    loadings = pd.read_csv(os.path.join(rootdir, 'pca_loadings.csv'))
 
     feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
 
@@ -128,7 +129,6 @@ if __name__ == '__main__':
 
     # regression between features
     fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
-
 
     # ## heatmap of fv
     # averages_vals = averages.drop(averages[averages.isna().any(axis=1)].index)
@@ -179,11 +179,6 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(rootdir, "total_rest_vs_spd_mean_night.png"))
     plt.close()
 
-    # fig = plt.figure(figsize=(5, 5))
-    # sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean')
-    # plt.savefig(os.path.join(rootdir, "total_rest_vs_spd_max_mean.png"))
-    # plt.close()
-
     plot_bout_lens_rest_day_night(rootdir, feature_v, diel_patterns)
     plot_dn_dif_rest_bouts(rootdir, feature_v, diel_patterns)
     plot_bout_lens_non_rest_day_night(rootdir, feature_v, diel_patterns)
@@ -231,10 +226,14 @@ if __name__ == '__main__':
 
     diet_vs_size(rootdir, col_vector, cichlid_meta, feature_v_mean)
     feature_correlations(rootdir, feature_v_mean, fv_eco_sp_ave)
-    plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
+    # need to update for the new species set
+    # plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
+    # plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     # plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
+
+    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc1', cmap_n='coolwarm')
+    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc2', cmap_n='PiYG')
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
-    plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
 
     # vertical position during the day vs total rest
@@ -256,7 +255,7 @@ if __name__ == '__main__':
     plt_lin_reg(rootdir, data1, data2, model, r_sq)
 
     # vertical position during the night vs total rest of diurnal clustered fish
-    cluster_p = 'diurnal'
+    cluster_p = 'diurnal' # after the new species set, need to redo clusters
     data1 = feature_v_mean.loc[feature_v_mean.cluster_pattern == cluster_p, 'total_rest']
     data2 = feature_v_mean.loc[feature_v_mean.cluster_pattern == cluster_p, 'y_mean_day']
     model, r_sq = run_linear_reg(data1, data2)

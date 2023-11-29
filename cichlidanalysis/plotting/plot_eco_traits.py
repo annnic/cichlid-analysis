@@ -3,9 +3,11 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 import scipy.spatial as spatial
 from scipy import stats
+from sklearn.preprocessing import MinMaxScaler
 
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
@@ -151,5 +153,38 @@ def plot_total_rest_vs_diet_significance(rootdir, feature_v_eco):
     sns.despine(top=True, right=True)
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance.png"))
+    plt.close()
+    return
+
+
+def plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc1', cmap_n='coolwarm'):
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    fig = plt.figure(figsize=(2, 1.5))
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+    plt.scatter(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=6, alpha=0.7,
+                edgecolors='none')
+    overlap = set(fv_eco_sp_ave.index).intersection(set(loadings.species))
+    points = fv_eco_sp_ave.loc[overlap, ['d13C', 'd15N']].rename_axis('species')
+    points = pd.merge(points, loadings, on='species')
+
+    cmap = plt.get_cmap(cmap_n)
+    scatter = plt.scatter(points['d13C'], points['d15N'], c=points[pc], cmap=cmap, s=6, alpha=0.7, edgecolors='none')
+
+    ax = plt.gca()
+    ax.set_xlabel('$\delta^{13} C$')
+    ax.set_ylabel('$\delta^{15} N$')
+    sns.despine(top=True, right=True)
+    cbar = plt.colorbar(scatter, label='{} loading'.format(pc), shrink=0.5)
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.tick_params(width=0.5)
+    fig.tight_layout()
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_{}.pdf".format(pc)), dpi=350)
     plt.close()
     return

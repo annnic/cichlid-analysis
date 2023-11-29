@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.cm
 import matplotlib.ticker as ticker
-import matplotlib
+import matplotlib.rcParams as rcParams
 from matplotlib.ticker import (MultipleLocator)
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
