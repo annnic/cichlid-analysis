@@ -7,7 +7,6 @@ import matplotlib
 import seaborn as sns
 import scipy.spatial as spatial
 from scipy import stats
-from sklearn.preprocessing import MinMaxScaler
 
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
