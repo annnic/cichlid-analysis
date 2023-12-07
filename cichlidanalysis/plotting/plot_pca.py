@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.cm
 import matplotlib.ticker as ticker
-import matplotlib.rcParams as rcParams
+import matplotlib as matplotlib
 from matplotlib.ticker import (MultipleLocator)
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
@@ -116,9 +116,9 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
 
     cmap = matplotlib.cm.get_cmap('twilight_shifted')
     # colors = {'dark': '#535353', 'light': 'gold', 'dawn': 'lightcoral', 'dusk': 'coral'}
-    colors = {'dark': '#535353', 'light': 'gold', 'ramping': '#FEB25E'}
+    colors = {'dark': 'lightblue', 'light': 'gold', 'ramping': '#FEB25E'}
 
-    fig = plt.figure(figsize=(2, 2))
+    fig = plt.figure(figsize=(1.5, 1.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel('Principal Component 1', fontsize=SMALL_SIZE)
     ax.set_ylabel('Principal Component 2', fontsize=SMALL_SIZE)
@@ -126,7 +126,7 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     timepoints = times.unique()
     for time_n, time in enumerate(timepoints):
         indicesToKeep = finalDf['daynight'] == time
-        ax.scatter(finalDf.loc[indicesToKeep, 'pc1'], finalDf.loc[indicesToKeep, 'pc2'], c=colors[time], s=10, alpha=0.7)
+        ax.scatter(finalDf.loc[indicesToKeep, 'pc1'], finalDf.loc[indicesToKeep, 'pc2'], c=colors[time], s=8, alpha=0.7)
                    # c=cmap(time_n / len(timepoints)), s=10)
 
     times_to_label = ['06:00', '06:30', '07:00', '07:30', '08:00', '18:30', '19:00', '19:30', '20:00']
@@ -136,9 +136,9 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
         plt.annotate(label, (finalDf.pc1[time_i], finalDf.pc2[time_i]), textcoords="offset points", xytext=(0, 3),
                      ha='center', fontsize=SMALLEST_SIZE)
 
-    ax.set_xlim([-8, 12])
-    ax.set_ylim([-5, 20])
-    ax.legend(timepoints)
+    ax.set_xlim([-8, 14])
+    ax.set_ylim([-5, 22])
+    ax.legend(timepoints, fontsize=SMALLEST_SIZE)
     ax.set_axisbelow(True)
     ax.grid(color='lightgrey', linewidth=0.5)
     # change all spines
@@ -148,6 +148,12 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     ax.spines['right'].set_visible(False)
     # tick width
     ax.tick_params(width=0.5)
+    # Decrease the offset for tick labels on all axes
+    ax.xaxis.labelpad = 0.5
+    ax.yaxis.labelpad = 0.5
+    # Adjust the offset for tick labels on all axes
+    ax.tick_params(axis='x', pad=0.5)
+    ax.tick_params(axis='y', pad=0.5)
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "pca_2D_figure.pdf"), dpi=350)
     plt.close()
@@ -171,7 +177,7 @@ def plot_pc(rootdir, principalDf, list_pcs=['pc1']):
 def plot_variance_explained(rootdir, pca):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
-    f, ax = plt.subplots(figsize=(1, 1))
+    f, ax = plt.subplots(figsize=(1.5, 1.5))
     plt.bar(np.arange(1, len(pca.explained_variance_ratio_)+1), pca.explained_variance_ratio_*100, color='lightgrey')
     plt.plot(np.arange(1, len(pca.explained_variance_ratio_)+1), np.cumsum(pca.explained_variance_ratio_*100),
              color='grey', marker='o', linestyle='-', linewidth=1, markersize=1)
@@ -183,10 +189,10 @@ def plot_variance_explained(rootdir, pca):
     # tick width
     ax.tick_params(width=0.5)
 
-    ax.set_xlabel('Principal component', fontsize=SMALLEST_SIZE)
-    ax.set_ylabel('Variance explained (%)', fontsize=SMALLEST_SIZE)
+    ax.set_xlabel('Principal component', fontsize=SMALL_SIZE)
+    ax.set_ylabel('Variance explained (%)', fontsize=SMALL_SIZE)
     ax.set_xticks([1, 3, 5, 7, 9])
-    ax.tick_params(axis='both', labelsize=SMALLEST_SIZE)
+    ax.tick_params(axis='both', labelsize=SMALL_SIZE)
     # Decrease the offset for tick labels on all axes
     ax.xaxis.labelpad = 0.5
     ax.yaxis.labelpad = 0.5
@@ -403,14 +409,12 @@ def plot_temporal_pcs(rootdir, finalDf, change_times_datetime):
             (days=day_n)], [span_max, span_max], span_min, color=night_col, alpha=0.5, linewidth=0)
 
         axes[pc_n].plot(date_time_obj, finalDf.loc[:, pc], lw=0.5, color=pc_cols[pc])
-        axes[pc_n].set_title(pc, y=0.85, fontsize=SMALL_SIZE)
+        # axes[pc_n].set_title(pc, y=0.85, fontsize=SMALL_SIZE)
 
-        if pc_n == 0:
-            axes[pc_n].set_yticks([-5, 0, 5, 10, 15])
-            axes[pc_n].tick_params(axis='y', labelsize=SMALL_SIZE)
-            axes[pc_n].set_ylabel('Title', fontsize=SMALL_SIZE)
-        else:
-            axes[pc_n].set_yticks([])
+        axes[pc_n].set_yticks([-5, 0, 5, 10, 15])
+        axes[pc_n].tick_params(axis='y', labelsize=SMALL_SIZE)
+        axes[pc_n].set_ylabel(pc, fontsize=SMALL_SIZE)
+
         axes[pc_n].set_xlim(dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S'),
                             dt.datetime.strptime("1970-1-3 00:00:01", '%Y-%m-%d %H:%M:%S'))
         axes[pc_n].set_ylim(span_min, span_max)
@@ -427,6 +431,13 @@ def plot_temporal_pcs(rootdir, finalDf, change_times_datetime):
         axes[pc_n].spines['right'].set_visible(False)
         axes[pc_n].tick_params(width=0.5)
         plt.setp(axes[pc_n].xaxis.get_majorticklabels(), rotation=70)
+        # Decrease the offset for tick labels on all axes
+        axes[pc_n].xaxis.labelpad = 0.5
+        axes[pc_n].yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        axes[pc_n].tick_params(axis='x', pad=0.5)
+        axes[pc_n].tick_params(axis='y', pad=0.5)
 
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, 'temporal_pcs.pdf'), format='pdf', dpi=350)

@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib
 import seaborn as sns
 
 
@@ -13,22 +14,35 @@ def plot_total_rest_ordered(rootdir, feature_v):
     :param feature_v:
     :return:
     """
-    fig = plt.figure(figsize=(5, 10))
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+    sns.set_context(rc={"lines.linewidth": 0.5})
+
+    fig = plt.figure(figsize=(1.5, 4.5))
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', dodge=False,
-                     showfliers=False, color='darkorchid',
+                     showfliers=False, color='silver', linewidth=0.5,
                      order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values("total_rest").index.to_list())
     for patch in ax.artists:
         fc = patch.get_facecolor()
         patch.set_facecolor(mcolors.to_rgba(fc, 0.3))
-    ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=4,
+    ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=1,
                        order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values(
-                           "total_rest").index.to_list())
+                           "total_rest").index.to_list(), linewidth=0.5)
     ax.set(xlabel='Average total rest per day', ylabel='Species')
     ax.set(xlim=(0, 24))
     plt.tight_layout()
-    ax = plt.axvline(12, ls='--', color='k')
+    plt.axvline(12, ls='--', color='k', lw=0.5)
     sns.despine(top=True, right=True)
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered.png"), dpi=1000)
+    # Access the spines and set the linewidth
+    for spine in ax.spines.values():
+        spine.set_linewidth(0.5)
+    # ax.spines['left'].set_linewidth(0.5)
+    # ax.spines['bottom'].set_linewidth(0.5)
+    # ax.tick_params(width=0.5)
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered.pdf"), dpi=350)
     plt.close()
     return
 

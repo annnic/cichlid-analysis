@@ -10,3 +10,4 @@ kneed
 openpyxl
 pytest
 statsmodels
+cmasher

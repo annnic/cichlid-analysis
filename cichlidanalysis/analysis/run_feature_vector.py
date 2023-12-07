@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import cmasher as cmr
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.io_feature_vector import load_feature_vectors, load_diel_pattern
@@ -25,7 +26,7 @@ from cichlidanalysis.plotting.plot_bouts import plot_bout_lens_rest_day_night, p
     plot_bout_lens_non_rest_day_night, plot_dn_dif_non_rest_bouts, rest_bouts_hists
 from cichlidanalysis.plotting.plot_eco_traits import plot_ecospace_vs_temporal_guilds, \
     plot_d15N_d13C_diet_guilds, plot_diet_guilds_hist, plot_total_rest_vs_diet_significance, \
-    plot_ecospace_vs_temporal_guilds_density, plot_ecospace_vs_feature
+    plot_ecospace_vs_temporal_guilds_density, plot_ecospace_vs_feature, plot_ecospace_vs_feature_rest
 
 
 # debug pycharm problem
@@ -231,10 +232,64 @@ if __name__ == '__main__':
     # plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     # plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
 
-    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc1', cmap_n='coolwarm')
-    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc2', cmap_n='PiYG')
+    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc1', cmap_n=cmr.iceburn)
+    plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc2', cmap_n=cmr.iceburn)
+
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
+
+    # save out data for PGLS corr in R
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+    ronco_data_ave = ronco_data_ave.rename_axis('species').reset_index()
+    cichild_corr_data = pd.merge(loadings, ronco_data_ave, on='species')
+    # Missing some species as they don't have data in ronco
+    # set(cichild_corr_data.species) ^ set(loadings.species)
+    # {'Astbur', 'Neolon', 'Neodev', 'Telluf'}
+    cichild_corr_data = pd.merge(cichild_corr_data, feature_v_mean.rename(columns={'six_letter_name_Ronco': 'species'}).loc[:, ['species','total_rest']], on='species')
+    cichild_corr_data.to_csv(os.path.join(rootdir, 'cichild_corr_data.csv'), sep=',', index=False, encoding='utf-8')
+
+    plot_ecospace_vs_feature_rest(rootdir, ronco_data, cichild_corr_data, fv_eco_sp_ave, feature='total_rest',
+                                  cmap_n=cmr.iceburn)
+    # correlations
+    data1 = cichild_corr_data.pc1
+    data2 = cichild_corr_data.d15N
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.pc1
+    data2 = cichild_corr_data.d13C
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.pc2
+    data2 = cichild_corr_data.d15N
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.pc2
+    data2 = cichild_corr_data.d13C
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.pc1
+    data2 = cichild_corr_data.total_rest
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.pc2
+    data2 = cichild_corr_data.total_rest
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.d13C
+    data2 = cichild_corr_data.total_rest
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    data1 = cichild_corr_data.d15N
+    data2 = cichild_corr_data.total_rest
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
 
     # vertical position during the day vs total rest
     data1 = feature_v_mean.total_rest

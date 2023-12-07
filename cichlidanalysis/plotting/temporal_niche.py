@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import matplotlib.gridspec
+import cmasher as cmr
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.utils.timings import load_timings
@@ -112,12 +113,97 @@ def plot_temporal_niche_one(rootdir, aves_ave_rest, loadings):
         select_data_inv = abs(select_data - 1)
         non_rest_ave = select_data_inv.mean(axis=0)
         non_rest_90 = select_data_inv.quantile(q=0.9, axis=0)
+        non_rest_std = select_data_inv.std(axis=0)
+
+        row_colors = pd.DataFrame(data=[my_palette[diet]] * len(select_data_inv.index.to_list()),
+                                  index=select_data_inv.index.to_list()).rename(columns={0: 'diet'})
+        sns.clustermap(select_data_inv, col_cluster=False, cmap=cmr.neutral, vmin=0, vmax=1, method='ward',
+                            figsize=(3.7, 3.7), row_colors=row_colors)
+        plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_{}.pdf".format(diet)), dpi=350)
+        plt.close()
+        if diet_n == 0:
+            all_non_rest_ave = non_rest_ave.to_frame(name=diet)
+            all_non_rest_90 = non_rest_ave.to_frame(name=diet)
+            all_non_rest_std = non_rest_std.to_frame(name=diet)
+
+        else:
+            all_non_rest_ave = pd.concat([all_non_rest_ave, non_rest_ave.to_frame(name=diet)], axis=1)
+            all_non_rest_90 = pd.concat([all_non_rest_90, non_rest_90.to_frame(name=diet)], axis=1)
+            all_non_rest_std = pd.concat([all_non_rest_std, non_rest_std.to_frame(name=diet)], axis=1)
+
+    # group plot
+    row_colors_groups = pd.DataFrame.from_dict(my_palette, orient='index').rename(columns={0: 'diet'})
+    sns.clustermap(all_non_rest_ave.transpose(), col_cluster=False, row_cluster=False, cmap=cmr.neutral, vmin=0, vmax=1,
+                   method='ward',
+                   figsize=(3.7, 1), row_colors=row_colors_groups)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_mean.pdf"), dpi=350)
+    plt.close()
+
+    # species plot
+    # need to order the dat first by 00:00, and then by diet group
+    select_diet = cichlid_meta.loc[:, ['six_letter_name_Ronco', 'diet']].rename(columns={'six_letter_name_Ronco': 'species'}).drop_duplicates()
+    # invert data
+    aves_ave_rest_inv = abs(aves_ave_rest - 1)
+    ordering_df = aves_ave_rest_inv.transpose().reset_index().rename(columns={'index': 'species'})
+
+    ordering_df = ordering_df.merge(loadings.loc[:, ['species', 'pc1', 'pc2']], how='left', on='species')
+    ordering_df = ordering_df.merge(select_diet, how='left', on='species')
+
+    ordering_df = ordering_df.sort_values(by=['diet', '00:00']).set_index('species')
+    row_colors_sp = ordering_df['diet'].map(my_palette)
+    ordered_df = ordering_df.iloc[:, 0:48]
+
+    sns.clustermap(ordered_df, col_cluster=False, row_cluster=False, cmap=cmr.neutral, vmin=0, vmax=1,
+                   figsize=(3.7, 5), row_colors=row_colors_sp, yticklabels=1)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_one_big.pdf"), dpi=350)
+    plt.close()
+
+    # combined species and group plot
+    species_and_groups = pd.concat([ordered_df, all_non_rest_ave.transpose()])
+    row_colors_sp_and_groups = pd.concat([row_colors_sp, row_colors_groups])
+    sns.clustermap(species_and_groups, col_cluster=False, row_cluster=False, cmap=cmr.neutral, vmin=0, vmax=1,
+                   figsize=(2, 5.5), row_colors=row_colors_sp_and_groups, yticklabels=1)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_combined_mean.pdf"), dpi=350)
+    plt.close()
+    return
+
+
+def plot_temporal_niche_one_five_blocks(rootdir, aves_ave_rest, loadings):
+    ###### temporal niche by diet
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    _, _, _, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
+    diets = ['Invertivore', 'Piscivore', 'Zooplanktivore', 'Algivore']
+    my_palette = {'Invertivore': 'tomato', 'Piscivore': 'steelblue', 'Zooplanktivore': 'sandybrown',
+                  'Algivore': 'mediumseagreen'}
+
+    # collapse light states into four blocks: night1, dawn, day, dusk, night2
+    aves_ave_rest_full = aves_ave_rest.reset_index()
+    block_dic = {'night1': np.arange(0, 14), 'dawn': [14], 'day': np.arange(15, 37), 'dusk': [37],
+                 'night2': np.arange(38, 48)}
+    for epoch_n, epoch in enumerate(block_dic):
+        ave_series = aves_ave_rest_full.iloc[block_dic[epoch], :].mean(axis=0).to_frame(name=epoch)
+        if epoch_n == 0:
+            aves_ave_rest_full_all = ave_series
+        else:
+            aves_ave_rest_full_all = pd.concat([aves_ave_rest_full_all, ave_series], axis=1)
+    aves_ave_rest_full_all = aves_ave_rest_full_all.transpose()
+
+    for diet_n, diet in enumerate(diets):
+        select_sp = cichlid_meta.loc[cichlid_meta.diet == diet, 'six_letter_name_Ronco'].unique()
+        overlap = set(aves_ave_rest_full_all.columns.intersection(set(select_sp)))
+        select_data = aves_ave_rest_full_all.transpose().loc[overlap]
+        select_data_inv = abs(select_data - 1)
+        non_rest_ave = select_data_inv.mean(axis=0)
+        non_rest_90 = select_data_inv.quantile(q=0.9, axis=0)
 
         row_colors = pd.DataFrame(data=[my_palette[diet]] * len(select_data_inv.index.to_list()),
                                   index=select_data_inv.index.to_list()).rename(columns={0: 'diet'})
         sns.clustermap(select_data_inv, col_cluster=False, cmap='cividis', vmin=0, vmax=1, method='ward',
                             figsize=(3.7, 3.7), row_colors=row_colors)
-        plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_{}.pdf".format(diet)), dpi=350)
+        plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_5blocks_{}.pdf".format(diet)), dpi=350)
         plt.close()
         if diet_n == 0:
             all_non_rest_ave = non_rest_ave.to_frame(name=diet)
@@ -132,26 +218,26 @@ def plot_temporal_niche_one(rootdir, aves_ave_rest, loadings):
     sns.clustermap(all_non_rest_ave.transpose(), col_cluster=False, row_cluster=False, cmap='cividis', vmin=0, vmax=1,
                    method='ward',
                    figsize=(3.7, 1), row_colors=row_colors_groups)
-    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_mean.pdf"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_5blocks_mean.pdf"), dpi=350)
     plt.close()
 
     # species plot
     # need to order the dat first by 00:00, and then by diet group
-    select_diet = cichlid_meta.loc[:, ['six_letter_name_Ronco', 'diet']].rename(columns={'six_letter_name_Ronco': 'species'})
+    select_diet = cichlid_meta.loc[:, ['six_letter_name_Ronco', 'diet']].rename(columns={'six_letter_name_Ronco': 'species'}).drop_duplicates()
     # invert data
-    aves_ave_rest_inv = abs(aves_ave_rest - 1)
+    aves_ave_rest_inv = abs(aves_ave_rest_full_all - 1)
     ordering_df = aves_ave_rest_inv.transpose().reset_index().rename(columns={'index': 'species'})
 
-    ordering_df = ordering_df.merge(loadings.loc[:, ['species', 'pc1']], how='left', on='species')
+    ordering_df = ordering_df.merge(loadings.loc[:, ['species', 'pc1', 'pc2']], how='left', on='species')
     ordering_df = ordering_df.merge(select_diet, how='left', on='species')
 
-    ordering_df = ordering_df.sort_values(by=['diet', '00:00']).set_index('species')
+    ordering_df = ordering_df.sort_values(by=['diet', 'day']).set_index('species')
     row_colors_sp = ordering_df['diet'].map(my_palette)
-    ordered_df = ordering_df.iloc[:, 0:48]
+    ordered_df = ordering_df.iloc[:, 0:5]
 
     sns.clustermap(ordered_df, col_cluster=False, row_cluster=False, cmap='cividis', vmin=0, vmax=1,
                    figsize=(3.7, 5), row_colors=row_colors_sp, yticklabels=1)
-    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_one_big.pdf"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_one_big_5blocks_day_sorted.pdf"), dpi=350)
     plt.close()
 
     # combined species and group plot
@@ -159,10 +245,9 @@ def plot_temporal_niche_one(rootdir, aves_ave_rest, loadings):
     row_colors_sp_and_groups = pd.concat([row_colors_sp, row_colors_groups])
     sns.clustermap(species_and_groups, col_cluster=False, row_cluster=False, cmap='cividis', vmin=0, vmax=1,
                    figsize=(3.7, 5), row_colors=row_colors_sp_and_groups, yticklabels=1)
-    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_combined_90pc.pdf"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_combined_90pc_5blocks.pdf"), dpi=350)
     plt.close()
     return
-
 
 if __name__ == '__main__':
     rootdir = select_dir_path()
