@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
+import matplotlib
 import seaborn as sns
 import matplotlib.cm as cm
 import pandas as pd
@@ -400,4 +401,56 @@ def plot_ridge_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, y
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
     plt.close('all')
+    return
+
+
+def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+    date_form = DateFormatter("%H")
+
+    for species_f in all_species:
+        # get speeds for each individual for a given species
+        spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # calculate ave and stdv
+        average = sp_spd.mean(axis=1)
+        stdv = sp_spd.std(axis=1)
+
+        plt.figure(figsize=(2, 1))
+        ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average, linewidth=0.5)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 60])
+        plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+        plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+        plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+        # Decrease the offset for tick labels on all axes
+        ax.xaxis.labelpad = 0.5
+        ax.yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        ax.tick_params(axis='x', pad=0.5, length=2)
+        ax.tick_params(axis='y', pad=0.5, length=2)
+
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
+        plt.close()
     return

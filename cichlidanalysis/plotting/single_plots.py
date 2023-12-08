@@ -127,4 +127,5 @@ def fill_plot_ts(ax, change_times_unit, tv_internal):
         print("wrong format, needs to be in datetime")
         return
     ax.set_xlim([1, days_to_plot - 1])
+    return
 

@@ -21,7 +21,8 @@ from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_
 from cichlidanalysis.analysis.bouts import find_bouts_input
 from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
-from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd, plot_speed_30m_sex
+from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd, plot_speed_30m_sex, \
+    plot_speed_30m_mstd_figure
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
     plot_bout_lengths_dn_move, plot_movement_30m_sex
 from cichlidanalysis.plotting.daily_plots import plot_daily
@@ -131,6 +132,7 @@ if __name__ == '__main__':
     plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 
     # speed_mm (30m bins) for each species (mean  +- std)
+    plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d)
     plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
     plot_speed_30m_sex(rootdir, fish_tracks_30m, change_times_d)
 
