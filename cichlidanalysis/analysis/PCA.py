@@ -241,6 +241,7 @@ if __name__ == '__main__':
 
     # aves_ave_spd with zscore is the input used for the paper
     run_pca_df = aves_ave_spd
+    run_pca_df = sp_feature_combined_daily
     norm_method = 'zscore'
     pca, labels, loadings, finalDf, principalComponents, data_input_norm = run_pca(rootdir, run_pca_df, norm=norm_method)
 

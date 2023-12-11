@@ -41,6 +41,33 @@ def output_timings():
            change_times_datetime, change_times_unit
 
 
+def output_timings_14_8():
+    """ set sunrise, day, sunset, night times (ns, s, m, h).
+    Sunrise starts at 7am, Day 7.30am, Sunset 6.30pm, Night 7pm
+
+    :return:
+    """
+    change_times_s = [8*60*60, 8*60*60 + 30*60, 21*60*60 + 30*60, 22*60*60]
+    change_times_ns = [i * 10**9 for i in change_times_s]
+    change_times_m = [i / 60 for i in change_times_s]
+    change_times_h = [i / 60 / 60 for i in change_times_s]
+    change_times_d = [i / 24 for i in change_times_h]
+    change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
+
+    # set day in ns
+    day_ns = 24 * 60 * 60 * 10**9
+    day_s = 24 * 60 * 60
+
+    change_times_datetime = [dt.datetime.strptime("1970-1-2 08:00:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 08:30:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 21:30:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 22:00:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S')]
+
+    return change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, \
+           change_times_datetime, change_times_unit
+
+
 def output_timings_730():
     """ set sunrise, day, sunset, night times (ns, s, m, h). For old data where:
     Sunrise starts at 7.30am, Day 8.00am, Sunset 7.00pm, Night 7.30pm
@@ -136,6 +163,30 @@ def set_time_vector(track_full, video_start_total_sec, config):
     else:
         tv = track_full[:, 0] - track_full[0, 0] + video_start_total_sec * NS_IN_SECONDS
     return tv
+
+def load_timings_14_8(vector_length):
+    """ Get all of the required time parameters. All data is with fps = 10 (may change in future
+
+    :param vector_length:
+    :return:
+    """
+    fps = 10
+
+    # get time variables
+    change_times_s_14_8, change_times_ns_14_8, change_times_m_14_8, change_times_h_14_8, day_ns, day_s, \
+    change_times_d_14_8, change_times_datetime_14_8, change_times_unit_14_8 = output_timings_14_8()
+    tv_ns = np.arange(0, day_ns * 8, 10 ** 9 / 10)
+    tv_ns = tv_ns[0:vector_length]
+    tv_sec = tv_ns / 10 ** 9
+
+    # correct to 24h time
+    tv_24h_sec = tv_ns / 10 ** 9
+    num_days = 7
+    tv_s_type = get_time_state(tv_sec, day_s, change_times_s_14_8, fps)
+
+    return fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s_14_8, change_times_ns_14_8, \
+           change_times_h_14_8, day_ns, day_s, change_times_d_14_8, change_times_m_14_8, change_times_datetime_14_8,\
+           change_times_unit_14_8
 
 
 if __name__ == "__main__":
