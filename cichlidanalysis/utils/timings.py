@@ -52,7 +52,7 @@ def output_timings_14_8():
     change_times_m = [i / 60 for i in change_times_s]
     change_times_h = [i / 60 / 60 for i in change_times_s]
     change_times_d = [i / 24 for i in change_times_h]
-    change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
+    change_times_unit = [8 * 2, 8.5 * 2, 21.5 * 2, 22 * 2]
 
     # set day in ns
     day_ns = 24 * 60 * 60 * 10**9

@@ -149,23 +149,23 @@ if __name__ == '__main__':
     # plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
     print("Finished movement plots")
 
-    # ### POSITION ###
-    # ##### x,y position (binned day/night, and average day/night) #####
-    plot_position_maps(meta, fish_tracks, rootdir)
+    # # ### POSITION ###
+    # # ##### x,y position (binned day/night, and average day/night) #####
+    # plot_position_maps(meta, fish_tracks, rootdir)
+    #
+    # # speed vs Y position, for each fish, for combine fish of species, separated between day and night
+    # spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
+    # print("Finished position plots")
 
-    # speed vs Y position, for each fish, for combine fish of species, separated between day and night
-    spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
-    print("Finished position plots")
-
-    # ### REST ###
-    # rest (30m bins) for each fish (individual lines)
-    plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
-
-    # rest (30m bins) for each species (mean  +- std)
-    plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
-    plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
-    plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
-    print("Finished rest plots")
+    # # ### REST ###
+    # # rest (30m bins) for each fish (individual lines)
+    # plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
+    #
+    # # rest (30m bins) for each species (mean  +- std)
+    # plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
+    # plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
+    # plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
+    # print("Finished rest plots")
 
     # get daily average
     plot_daily(fish_tracks_30m, change_times_unit, rootdir)
@@ -177,5 +177,5 @@ if __name__ == '__main__':
 
     # feature vectors: for each fish readout vector of feature values
     create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
-    create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
+    # create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
 
