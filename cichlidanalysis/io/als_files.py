@@ -66,3 +66,40 @@ def load_bin_als_files(folder, suffix="*als.csv"):
 
     print("All binned als.csv files loaded")
     return data
+
+
+def add_condition(data, file, tag1, tag2):
+    if tag1 in file:
+        data['condition'] = tag1
+    elif tag2 in file:
+        data['condition'] = tag2
+    else:
+        data['condition'] = float("nan")
+    return data
+
+
+def load_bin_als_file_condition(folder, suffix="*als_30m.csv", tag1='melatonin', tag2='ethanol'):
+    os.chdir(folder)
+    files = glob.glob(suffix)
+    files.sort()
+    first_done = 0
+
+    for file in files:
+        if first_done:
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            print("loaded file {}".format(file))
+            data_s = add_condition(data_s, file, tag1, tag2)
+            data = pd.concat([data, data_s])
+
+        else:
+            # initiate data frames for each of the fish, beside the time series,
+            data = pd.read_csv(os.path.join(folder, file), sep=',')
+            data = add_condition(data, file, tag1, tag2)
+            print("loaded file {}".format(file))
+            first_done = 1
+
+    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
+    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
+
+    print("All binned als.csv files loaded")
+    return data

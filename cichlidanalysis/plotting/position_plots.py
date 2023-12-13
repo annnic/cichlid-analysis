@@ -194,20 +194,21 @@ def plot_position_maps(meta, fish_tracks, rootdir):
             ax1[1].invert_yaxis()
             ax1[1].set_ylabel("Night")
         else:
-            ax1[0, idx].title(species_n)
-            ax1[0, idx].set_ylabel("Day")
-            ax1[0, idx].imshow(position_day_xy.T, vmin=0, vmax=25)
-            ax1[0, idx].invert_yaxis()
-            ax1[0, idx].get_xaxis().set_ticks([])
-            ax1[0, idx].get_yaxis().set_ticks([])
-            ax1[1, idx].clear()
-            ax1[1, idx].imshow(position_night_xy.T, vmin=0, vmax=25)
-            ax1[1, idx].get_xaxis().set_ticks([])
-            ax1[1, idx].get_yaxis().set_ticks([])
-            ax1[1, idx].invert_yaxis()
-            ax1[1, idx].set_ylabel("Night")
+            ax1[0].title(species_n)
+            ax1[0].set_ylabel("Day")
+            ax1[0].imshow(position_day_xy.T, vmin=0, vmax=25)
+            ax1[0].invert_yaxis()
+            ax1[0].get_xaxis().set_ticks([])
+            ax1[0].get_yaxis().set_ticks([])
+            ax1[1].clear()
+            ax1[1].imshow(position_night_xy.T, vmin=0, vmax=25)
+            ax1[1].get_xaxis().set_ticks([])
+            ax1[1].get_yaxis().set_ticks([])
+            ax1[1].invert_yaxis()
+            ax1[1].set_ylabel("Night")
 
-    fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all.png"))
+        fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all_{}.png".format(species_n)))
+    return
 
 
 def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):

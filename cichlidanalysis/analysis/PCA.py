@@ -241,12 +241,12 @@ if __name__ == '__main__':
 
     # aves_ave_spd with zscore is the input used for the paper
     run_pca_df = aves_ave_spd
-    run_pca_df = sp_feature_combined_daily
     norm_method = 'zscore'
     pca, labels, loadings, finalDf, principalComponents, data_input_norm = run_pca(rootdir, run_pca_df, norm=norm_method)
 
     # plot normalised data input
     plot_norm_traces(rootdir, data_input_norm, norm_method)
+    data_input_norm.reset_index().to_csv(os.path.join(rootdir, 'pca_input_zscore.csv'), sep=',', index=False, encoding='utf-8')
 
     # independent plots
     plot_3D_pc_space(rootdir, run_pca_df, finalDf, pca)
