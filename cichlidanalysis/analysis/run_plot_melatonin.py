@@ -33,7 +33,6 @@ if __name__ == '__main__':
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
 
     # speed_mm (30m bins) for each species (mean  +- std)
-    plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_bin, change_times_d)
     plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_bin, change_times_d, tag1, tag2)
 
     # day 2 to 8am on day 5 = baseline
@@ -163,7 +162,6 @@ if __name__ == '__main__':
         ax.tick_params(width=0.5)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        plt.tight_layout()
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_figure_condition_stripplot_10-14h_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
         plt.close()

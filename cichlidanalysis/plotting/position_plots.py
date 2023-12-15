@@ -128,7 +128,6 @@ def plot_position_maps(meta, fish_tracks, rootdir):
         position_day = fish_tracks.loc[(fish_tracks.daynight == 'd') & (fish_tracks["FishID"].isin(fishes_of_species))]
         position_night = fish_tracks.loc[(fish_tracks.daynight == 'n') & (fish_tracks["FishID"].isin(fishes_of_species))]
 
-        fig1, ax1 = plt.subplots(2, len(meta.loc["species"].unique()))
 
         # Creating bins
         x_min = 0
@@ -179,6 +178,7 @@ def plot_position_maps(meta, fish_tracks, rootdir):
         plt.gca().set_yticks([])
         plt.savefig(os.path.join(rootdir, "xy_ave_Night_{0}.png".format(species_n.replace(' ', '-'))))
 
+        fig1, ax1 = plt.subplots(2, 1)
         # find better way to deal with lack of second dimension when only one species
         if len(meta.loc["species"].unique()) == 1:
             ax1[0].set_title(species_n)
@@ -194,7 +194,7 @@ def plot_position_maps(meta, fish_tracks, rootdir):
             ax1[1].invert_yaxis()
             ax1[1].set_ylabel("Night")
         else:
-            ax1[0].title(species_n)
+            ax1[0].set_title(species_n)
             ax1[0].set_ylabel("Day")
             ax1[0].imshow(position_day_xy.T, vmin=0, vmax=25)
             ax1[0].invert_yaxis()

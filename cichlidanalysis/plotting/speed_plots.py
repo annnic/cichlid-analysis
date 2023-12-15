@@ -456,7 +456,7 @@ def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d):
     return
 
 
-def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d):
+def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d, normal_days=4):
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
@@ -484,7 +484,32 @@ def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_ti
         ax.xaxis.set_major_locator(MultipleLocator(0.5))
         ax.xaxis.set_major_formatter(date_form)
         tv_internal = fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[1]].ts
-        fill_plot_ts(ax, change_times_d, tv_internal)
+
+        td = tv_internal.iloc[-1] - tv_internal.iloc[0]
+        days = td.round('d')
+        if td > days:
+            days = days + '1d'
+        days_to_plot = days.days + 1
+
+        # for the normal days, plot the different light conditions
+        for day_n in range(normal_days):
+            ax.axvspan(0 + day_n, change_times_d[0] + day_n, color='lightblue', alpha=0.5, linewidth=0)
+            ax.axvspan(change_times_d[0] + day_n, change_times_d[1] + day_n, color='wheat', alpha=0.5,
+                       linewidth=0)
+            ax.axvspan(change_times_d[2] + day_n, change_times_d[3] + day_n, color='wheat', alpha=0.5,
+                       linewidth=0)
+            ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
+
+        # for the rest of the days, plot Dark:Dark
+        for day_n in np.arange(normal_days, days_to_plot):
+            ax.axvspan(0 + day_n, change_times_d[0] + day_n, color='lightblue', alpha=0.5, linewidth=0)
+            ax.axvspan(change_times_d[0] + day_n, change_times_d[3] + day_n, color='lightblue', alpha=0.25,
+                       linewidth=0)
+            ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
+        # ax.axvspan(day_n + 1, days_to_plot, color='lightblue', alpha=0.5, linewidth=0)
+
+        ax.set_xlim([1, days_to_plot - 1])
+
         ax.set_ylim([0, 100])
         td = tv_internal.iloc[-1] - tv_internal.iloc[0]
         days = td.round('d')
