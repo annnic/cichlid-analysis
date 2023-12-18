@@ -503,7 +503,7 @@ def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_ti
         # for the rest of the days, plot Dark:Dark
         for day_n in np.arange(normal_days, days_to_plot):
             ax.axvspan(0 + day_n, change_times_d[0] + day_n, color='lightblue', alpha=0.5, linewidth=0)
-            ax.axvspan(change_times_d[0] + day_n, change_times_d[3] + day_n, color='lightblue', alpha=0.25,
+            ax.axvspan(change_times_d[0] + day_n, change_times_d[3] + day_n, color='cadetblue', alpha=0.3,
                        linewidth=0)
             ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
         # ax.axvspan(day_n + 1, days_to_plot, color='lightblue', alpha=0.5, linewidth=0)
@@ -581,9 +581,13 @@ def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times
         tv_internal = fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[1]].ts
         fill_plot_ts(ax, change_times_d, tv_internal)
 
-        # add injection timing on 4th and 5th day
+        # add day injection timing on 4th and 5th day
         ax.axvspan(9/24 + 4, 10/24 + 4, color='darkgrey', alpha=1, linewidth=0, zorder=10)
         ax.axvspan(9/24 + 5, 10/24 + 5, color='darkgrey', alpha=1, linewidth=0, zorder=11)
+
+        # # add night injection timing on 4th and 5th day
+        # ax.axvspan(23/24 + 3, 24/24 + 3, color='darkgrey', alpha=1, linewidth=0, zorder=10)
+        # ax.axvspan(23/24 + 4, 24/24 + 4, color='darkgrey', alpha=1, linewidth=0, zorder=11)
 
         # add quantification timing on 4th and 5th day
         for epoch in measure_epochs:

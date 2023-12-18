@@ -32,8 +32,13 @@ if __name__ == '__main__':
     # convert ts to datetime
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
 
+    # day
     measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 12:00:00'), pd.to_datetime('1970-01-05 16:00:00')],
               'epoch_2': [pd.to_datetime('1970-01-06 12:00:00'), pd.to_datetime('1970-01-06 16:00:00')]}
+
+    # #night
+    # measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 00:00:00'), pd.to_datetime('1970-01-05 04:00:00')],
+    #           'epoch_2': [pd.to_datetime('1970-01-06 00:00:00'), pd.to_datetime('1970-01-06 04:00:00')]}
 
     # speed_mm (30m bins) for each species (mean  +- std)
     plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_bin, change_times_d, tag1, tag2, measure_epochs)
