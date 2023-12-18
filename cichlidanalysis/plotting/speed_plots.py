@@ -508,7 +508,6 @@ def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_ti
             ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
         # ax.axvspan(day_n + 1, days_to_plot, color='lightblue', alpha=0.5, linewidth=0)
 
-        ax.set_xlim([1, days_to_plot - 1])
 
         ax.set_ylim([0, 100])
         td = tv_internal.iloc[-1] - tv_internal.iloc[0]
@@ -516,7 +515,7 @@ def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_ti
         if td > days:
             days = days + '1d'
         days_to_plot = days.days + 1
-        ax.set_xlim([1, days_to_plot - 0.5])
+        ax.set_xlim([1, days_to_plot - 16 / 24])
         plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
         plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
         plt.title(species_f, fontsize=SMALLEST_SIZE)
@@ -540,7 +539,7 @@ def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_ti
     return
 
 
-def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times_d, tag1, tag2):
+def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times_d, tag1, tag2, measure_epochs):
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
@@ -582,9 +581,15 @@ def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times
         tv_internal = fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[1]].ts
         fill_plot_ts(ax, change_times_d, tv_internal)
 
-    # add injection timing on 4th and 5th day
+        # add injection timing on 4th and 5th day
         ax.axvspan(9/24 + 4, 10/24 + 4, color='darkgrey', alpha=1, linewidth=0, zorder=10)
         ax.axvspan(9/24 + 5, 10/24 + 5, color='darkgrey', alpha=1, linewidth=0, zorder=11)
+
+        # add quantification timing on 4th and 5th day
+        for epoch in measure_epochs:
+            ax.axvspan(measure_epochs[epoch][0].hour/24 + measure_epochs[epoch][0].day -1,
+                    measure_epochs[epoch][1].hour/24 + measure_epochs[epoch][0].day -1,
+                    color='seagreen', alpha=0.5, linewidth=0, zorder=10)
 
         ax.set_ylim([0, 100])
         td = tv_internal.iloc[-1] - tv_internal.iloc[0]

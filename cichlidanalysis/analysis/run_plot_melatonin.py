@@ -32,8 +32,11 @@ if __name__ == '__main__':
     # convert ts to datetime
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
 
+    measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 12:00:00'), pd.to_datetime('1970-01-05 16:00:00')],
+              'epoch_2': [pd.to_datetime('1970-01-06 12:00:00'), pd.to_datetime('1970-01-06 16:00:00')]}
+
     # speed_mm (30m bins) for each species (mean  +- std)
-    plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_bin, change_times_d, tag1, tag2)
+    plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_bin, change_times_d, tag1, tag2, measure_epochs)
 
     # day 2 to 8am on day 5 = baseline
     # day 4 8am until end
@@ -102,14 +105,13 @@ if __name__ == '__main__':
 
 
     # grab ethonal and melatonin at 10-14 and plot and compare, from day 4 and day 5
-    epochs = {'epoch_1': [pd.to_datetime('1970-01-05 12:00:00'), pd.to_datetime('1970-01-05 14:00:00')],
-              'epoch_2': [pd.to_datetime('1970-01-06 12:00:00'), pd.to_datetime('1970-01-06 14:00:00')]}
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
     custom_palette = ["k", "m", "darkgrey", "violet"]
     custom_order = [tag2, tag1]
+    ymax = 70
 
     # fish_tracks_bin, change_times_d, tag1, tag2
     for species_f in all_species:
@@ -119,11 +121,11 @@ if __name__ == '__main__':
         sp_spd_tag1 = spd_tag1.pivot(columns='FishID', values='speed_mm', index='ts')
         sp_spd_tag2 = spd_tag2.pivot(columns='FishID', values='speed_mm', index='ts')
 
-        for epoch_n, epoch in enumerate(epochs):
-                filtered_spd_tag1 = sp_spd_tag1[(epochs[epoch][0] < sp_spd_tag1.index) & (sp_spd_tag1.index < epochs[epoch][1])]
+        for epoch_n, epoch in enumerate(measure_epochs):
+                filtered_spd_tag1 = sp_spd_tag1[(measure_epochs[epoch][0] < sp_spd_tag1.index) & (sp_spd_tag1.index < measure_epochs[epoch][1])]
                 spd_tag1_ave = filtered_spd_tag1.mean(axis=0)
 
-                filtered_spd_tag2 = sp_spd_tag2[(epochs[epoch][0] < sp_spd_tag2.index) & (sp_spd_tag2.index < epochs[epoch][1])]
+                filtered_spd_tag2 = sp_spd_tag2[(measure_epochs[epoch][0] < sp_spd_tag2.index) & (sp_spd_tag2.index < measure_epochs[epoch][1])]
                 spd_tag2_ave = filtered_spd_tag2.mean(axis=0)
 
                 df_1 = pd.DataFrame({'spd_ave': spd_tag1_ave, 'condition': tag1, 'epoch': epoch, 'col_tag': tag1 + '-'
@@ -139,15 +141,19 @@ if __name__ == '__main__':
                 # t_statistic, p_value = ttest_ind(group1, group2)
 
         # 2 epochs, 2 conditions, 2 species - sperarate species
+        ttest_stats = ttest_ind(spd_aves_condition.spd_ave[spd_aves_condition.condition == tag2],
+                        spd_aves_condition.spd_ave[spd_aves_condition.condition == tag1])
 
-        plt.figure(figsize=(2, 1))
+        plt.figure(figsize=(1.8, 1))
         ax = sns.stripplot(data=spd_aves_condition, x='condition', y='spd_ave', s=2, hue='col_tag',
                            palette=custom_palette,
                            order=custom_order)
+        plt.title("")
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        ax.set_ylim([0, 70])
+        ax.set_ylim([0, ymax])
         plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
-        plt.title(species_f, fontsize=SMALLEST_SIZE)
+        # plt.title(species_f, fontsize=SMALLEST_SIZE)
+        # ax.set_xticklabels(custom_order, rotation=45)
 
         # Decrease the offset for tick labels on all axes
         ax.xaxis.labelpad = 0.5
@@ -162,6 +168,9 @@ if __name__ == '__main__':
         ax.tick_params(width=0.5)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+
+        plt.text(-0.2, ymax, 'P-value: ' + str(round(ttest_stats[1], 3)))
+
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_figure_condition_stripplot_10-14h_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
         plt.close()
