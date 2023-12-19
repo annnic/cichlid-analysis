@@ -29,7 +29,7 @@ def plot_temporal_niche(rootdir, aves_ave_rest):
 
     for diet_n, diet in enumerate(diets):
         select_sp = cichlid_meta.loc[cichlid_meta.diet == diet, 'six_letter_name_Ronco'].unique()
-        select_data = aves_ave_rest.transpose().loc[select_sp]
+        select_data = aves_ave_rest.transpose().loc[list(set(aves_ave_rest.columns).intersection(select_sp))]
         select_data_inv = abs(select_data - 1)
         # rest_sum_norm = select_data.sum(axis=1)/select_data.shape[0]
         non_rest_max = select_data_inv.max(axis=0)
@@ -41,7 +41,7 @@ def plot_temporal_niche(rootdir, aves_ave_rest):
         sns.clustermap(select_data_inv, col_cluster=False, cmap='cividis', vmin=0, vmax=1, method='ward',
                             figsize=(3.7, 3.7), row_colors=row_colors)
         ax = plt.gca()
-        ax.ax_row_dendrogram.set_visible(False)  # suppress row dendrogram
+        # ax.ax_row_dendrogram.set_visible(False)  # suppress row dendrogram
         plt.savefig(os.path.join(rootdir, "temporal_niche_partitioning_{}.png".format(diet)), dpi=350)
         plt.close()
         if diet_n == 0:
@@ -96,6 +96,7 @@ def plot_temporal_niche(rootdir, aves_ave_rest):
 
 
 def plot_temporal_niche_one(rootdir, aves_ave_rest, loadings):
+    # plot one combined block with all diet types and the mean
     ###### temporal niche by diet
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
@@ -249,6 +250,7 @@ def plot_temporal_niche_one_five_blocks(rootdir, aves_ave_rest, loadings):
     plt.close()
     return
 
+
 if __name__ == '__main__':
     rootdir = select_dir_path()
 
@@ -269,4 +271,8 @@ if __name__ == '__main__':
 
     aves_ave_rest = feature_daily(averages_rest)
 
-    plot_temporal_niche(rootdir, aves_ave_rest)
+    # plot_temporal_niche(rootdir, aves_ave_rest)
+    plot_temporal_niche_one(rootdir, aves_ave_rest, loadings)
+
+    # sp_to_tribes = sp_metrics.loc[:, ['tribe', 'six_letter_name_Ronco']].rename(columns={"six_letter_name_Ronco": "species"})
+    # plot_temporal_niche_one(rootdir, aves_ave_rest, loadings, tribe_col, sp_to_tribes)

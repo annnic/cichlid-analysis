@@ -11,6 +11,8 @@ from matplotlib.ticker import (MultipleLocator)
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
 import datetime as dt
+import cmasher as cmr
+
 from mpl_toolkits.mplot3d import Axes3D
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 
@@ -206,7 +208,7 @@ def plot_variance_explained(rootdir, pca):
     return
 
 
-def plot_factor_loading_matrix(rootdir, loadings, top_pc=3):
+def plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_pc=3):
     """ Plot the factor loading matrix for top X pcs
 
     :param rootdir:
@@ -221,14 +223,20 @@ def plot_factor_loading_matrix(rootdir, loadings, top_pc=3):
     plt.close()
 
     SMALLEST_SIZE = 5
-    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
 
-    g = sns.clustermap(loadings.iloc[:, :top_pc], cmap="PiYG", figsize=(1, 6), col_cluster=False,
-                   yticklabels=True, method='ward', cbar_kws={'label': 'PC loading'})
+    sp_tribes = pd.merge(pd.DataFrame(loadings.index).rename(columns={0: 'species'}), sp_to_tribes, on='species').drop_duplicates()
+    row_colors = sp_tribes.tribe.map(tribe_col)
+    row_colors = row_colors.set_axis(sp_tribes.species)
+    g = sns.clustermap(loadings.iloc[:, :top_pc], cmap=cmr.copper_s, figsize=(1, 6), col_cluster=False,
+                   yticklabels=True, method='ward', cbar_kws={'label': 'PC loading'}, row_colors=row_colors,
+                       colors_ratio=0.2, vmin=-0.2, vmax=0.2)
     # annot=True,
-    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=SMALLEST_SIZE)
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=SMALL_SIZE)
+    g.ax_heatmap.tick_params(width=0.5)
     # plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.png"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.pdf"), dpi=350)
     plt.close()
     return
 

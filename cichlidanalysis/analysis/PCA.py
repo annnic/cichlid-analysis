@@ -21,6 +21,7 @@ from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, p
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots
+from cichlidanalysis.utils.species_metrics import tribe_cols
 
 # inspired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 # and https://builtin.com/machine-learning/pca-in-python
@@ -198,6 +199,8 @@ if __name__ == '__main__':
     fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, species_sixes = setup_run_binned(rootdir)
     feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
 
+    sp_to_tribes = sp_metrics.loc[:, ['tribe', 'six_letter_name_Ronco']].rename(columns={"six_letter_name_Ronco": "species"})
+
     # get timings
     fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
     day_ns, day_s, change_times_d, change_times_m, change_times_datetime, change_times_unit \
@@ -246,11 +249,12 @@ if __name__ == '__main__':
 
     # plot normalised data input
     plot_norm_traces(rootdir, data_input_norm, norm_method)
-    data_input_norm.reset_index().to_csv(os.path.join(rootdir, 'pca_input_zscore.csv'), sep=',', index=False, encoding='utf-8')
+    data_input_norm.reset_index().to_csv(os.path.join(rootdir, 'pca_input_zscore.csv'), sep=',', index=False,
+                                         encoding='utf-8')
 
     # independent plots
     plot_3D_pc_space(rootdir, run_pca_df, finalDf, pca)
-    plot_factor_loading_matrix(rootdir, loadings, top_pc=2)
+    plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_pc=2)
     pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
     plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2'])
 
@@ -277,4 +281,6 @@ if __name__ == '__main__':
     plt_lin_reg(rootdir, loadings_sp.peak.astype(float), loadings_sp.pc2, model, r_sq)
 
     plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp)
+
+    plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm)
 
