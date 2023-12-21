@@ -76,7 +76,7 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
     Pxx = Pxx[per <= max_per]
     per = per[per <= max_per]
 
-    plt.figure(figsize=(1, 1))
+    plt.figure(figsize=(1.5, 1.5))
     try:
         if logscale:
             plt.semilogx(per, Pxx, 'ko', markersize=1)
@@ -123,7 +123,7 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
 
     plt.xlabel('period [hours]')
     plt.ylabel('PSD')
-    plt.title(name + peak_label)
+    plt.title(name + peak_label, fontsize=SMALLEST_SIZE)
 
     # Adjust the offset for tick labels on all axes
     plt.tick_params(axis='x', pad=0.5, length=2)
@@ -141,6 +141,8 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
 
     if save_to:
         plt.savefig(save_to + prefix + '.pdf')
+        plt.tight_layout()
+        plt.savefig(save_to + prefix + '_tight.pdf')
         # plt.savefig(save_to + prefix + '.png')
         plt.close()
     else:

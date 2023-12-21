@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
 
@@ -32,12 +33,16 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
     :param label: label to add to save name
     :return: saves plot
     """
-    fig = plt.figure(figsize=(3, 3))
-    ax = sns.scatterplot(x, y)
+    SMALL_SIZE = 6
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    fig = plt.figure(figsize=(2, 2))
+    ax = sns.scatterplot(x, y, s=3)
     # x_intercept = (model.intercept_/model.coef_)[0]*-1
     # plt.plot([0, x_intercept], [model.intercept_, 0], color='k')
     y_pred = model.predict(np.reshape(x.to_numpy(), (-1, 1)))
-    plt.plot(x, y_pred, color='k')
+    plt.plot(x, y_pred, color='k', linewidth=1)
     ax.set(xlim=(min(x), max(x)), ylim=(min(y), max(y)))
 
     r = np.corrcoef(x, y)
@@ -46,7 +51,13 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
     fig.tight_layout()
     # ax.set_ylabel('Day - night activity')
     # ax.set_xlabel('Peak fraction')
-    plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.png".format(x.name, y.name, label)), dpi=300)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for axis in ['bottom', 'left']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+
+    plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.pdf".format(x.name, y.name, label)), dpi=300)
     plt.close()
 
     # # residuals plot

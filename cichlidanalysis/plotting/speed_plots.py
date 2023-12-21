@@ -404,7 +404,7 @@ def plot_ridge_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, y
     return
 
 
-def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d):
+def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d, ylim_max=60):
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
@@ -432,7 +432,7 @@ def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d):
         ax.xaxis.set_major_locator(MultipleLocator(0.5))
         ax.xaxis.set_major_formatter(date_form)
         fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
-        ax.set_ylim([0, 60])
+        ax.set_ylim([0, ylim_max])
         plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
         plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
         plt.title(species_f, fontsize=SMALLEST_SIZE)

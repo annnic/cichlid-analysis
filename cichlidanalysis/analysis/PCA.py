@@ -20,7 +20,7 @@ from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, p
     plot_temporal_pcs
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots
+from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots, plot_all_spd_zscore_subplots
 from cichlidanalysis.utils.species_metrics import tribe_cols
 
 # inspired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
@@ -282,5 +282,6 @@ if __name__ == '__main__':
 
     plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp)
 
-    plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm)
+    plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm,
+                                 tribe_col, sp_to_tribes)
 

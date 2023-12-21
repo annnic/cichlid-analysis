@@ -8,7 +8,10 @@ from scipy.cluster.hierarchy import dendrogram, linkage, fcluster, cophenet
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator)
 from matplotlib.dates import DateFormatter
+import matplotlib as matplotlib
+import matplotlib.patches as patches
 from datetime import timedelta
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from cichlidanalysis.utils.timings import output_timings
 
@@ -301,18 +304,20 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadi
     return
 
 
-def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings):
-    date_form = DateFormatter('%H')
-    fish_IDs = fish_tracks_bin['FishID'].unique()
-    species = fish_tracks_bin['species'].unique()
-    feature = 'speed_mm'
-    span_max = 100
-    day_n = 0
-
+def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings, data_input_norm,  tribe_col,
+                                 sp_to_tribes):
     # font sizes
     SMALL_SIZE = 6
     MEDIUM_SIZE = 8
     BIGGER_SIZE = 10
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    date_form = DateFormatter('%H')
+    feature = 'speed_mm'
+    span_max = (data_input_norm.max()).max() + 0.1
+    span_min = (data_input_norm.min()).min() + 0.1
+    day_n = 0
 
     sorted_loadings = loadings.sort_values(by='pc1')
     data_minmax = sorted_loadings.pc1
@@ -325,59 +330,79 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
     cols = 12
     n_plots = rows*cols
 
+    sp_tribes = pd.merge(pd.DataFrame(sorted_loadings.index).rename(columns={0: 'species'}), sp_to_tribes, on='species').drop_duplicates()
+    row_colors = sp_tribes.tribe.map(tribe_col)
+    row_colors = row_colors.set_axis(sp_tribes.species)
+
+    rect_x = 0  # x-coordinate of the bottom-left corner of the rectangle
+    rect_y = span_max-1  # y-coordinate of the bottom-left corner of the rectangle
+    rect_width = 20  # width of the rectangle
+    rect_height = 0.25  # height of the rectangle
+
     fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(8, 5))
     # Flatten the 2D array of subplots to make it easier to iterate
     axes = axes.flatten()
 
-    for species_n, species_name in enumerate(sorted_loadings.species):
+    for species_n, species_name in enumerate(sorted_loadings.index):
         # get speeds for each individual for a given species
-        feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][[feature, 'FishID', 'ts']]
-        sp_feature = feature_i.pivot(columns='FishID', values=feature, index='ts')
+        feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][['speed_mm', 'FishID', 'ts']]
+        sp_feature = feature_i.pivot(columns='FishID', values='speed_mm', index='ts')
 
         # get time of day so that the same tod for each fish can be averaged
         sp_feature['time_of_day'] = sp_feature.apply(lambda row: str(row.name)[11:16], axis=1)
+
+        # calculate ave and stdv
         sp_spd_ave = sp_feature.groupby('time_of_day').mean()
-        sp_spd_ave_std = sp_spd_ave.std(axis=1)
-        daily_feature = sp_spd_ave.mean(axis=1)
+
+        # zscore normalise each fish of the species
+        x = StandardScaler().fit_transform(sp_spd_ave.values)
+        data_input_norm_sp = pd.DataFrame(x, columns=sp_spd_ave.columns, index=sp_spd_ave.index)
+
+        daily_ave_spd_zscore_mean = data_input_norm_sp.mean(axis=1)
+        daily_ave_spd_zscore_std = data_input_norm_sp.std(axis=1)
 
         # make datetime consistent, also make the points the middle of the bin
         time_dif = dt.datetime.strptime("1970-1-1 23:45:00", '%Y-%m-%d %H:%M:%S') - dt.datetime.strptime('00:00', '%H:%M')
         date_time_obj = []
-        for i in daily_feature.index:
+        for i in data_input_norm.index:
             date_time_obj.append(dt.datetime.strptime(i, '%H:%M')+time_dif)
 
         # for day_n in range(days_to_plot):
         night_col = 'lightblue'
         axes[species_n].fill_between(
             [dt.datetime.strptime("1970-1-1 23:30:00", '%Y-%m-%d %H:%M:%S') + timedelta(days=day_n),
-             change_times_datetime[0] + timedelta(days=day_n)], [span_max, span_max], 0,
+             change_times_datetime[0] + timedelta(days=day_n)], [span_max, span_max], span_min,
             color=night_col, alpha=0.5, linewidth=0, zorder=1)
         axes[species_n].fill_between([change_times_datetime[0] + timedelta(days=day_n),
-                                  change_times_datetime[1] + timedelta(days=day_n)], [span_max, span_max], 0,
+                                  change_times_datetime[1] + timedelta(days=day_n)], [span_max, span_max], span_min,
                                  color='wheat',
                                  alpha=0.5, linewidth=0)
         axes[species_n].fill_between(
             [change_times_datetime[2] + timedelta(days=day_n), change_times_datetime[3] + timedelta
-            (days=day_n)], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+            (days=day_n)], [span_max, span_max], span_min, color='wheat', alpha=0.5, linewidth=0)
         axes[species_n].fill_between(
             [change_times_datetime[3] + timedelta(days=day_n), change_times_datetime[4] + timedelta
-            (days=day_n)], [span_max, span_max], 0, color=night_col, alpha=0.5, linewidth=0)
+            (days=day_n)], [span_max, span_max], span_min, color=night_col, alpha=0.5, linewidth=0)
 
         # plot speed data
-        axes[species_n].plot(date_time_obj, (daily_feature + sp_spd_ave_std), lw=1, color='lightgrey')
-        axes[species_n].plot(date_time_obj, (daily_feature - sp_spd_ave_std), lw=1, color='lightgrey')
-        # cmap = plt.get_cmap('RdBu')
-        # cmap(df_scaled.iloc[species_n])
-        axes[species_n].plot(date_time_obj, daily_feature, lw=1, color='#1f77b4')
+        axes[species_n].plot(date_time_obj, (daily_ave_spd_zscore_mean + daily_ave_spd_zscore_std), lw=1, color='lightgrey')
+        axes[species_n].plot(date_time_obj, (daily_ave_spd_zscore_mean - daily_ave_spd_zscore_std), lw=1, color='lightgrey')
+        axes[species_n].plot(date_time_obj, daily_ave_spd_zscore_mean, lw=1, color='#1f77b4')
         axes[species_n].set_title(species_name, y=0.85, fontsize=MEDIUM_SIZE)
+
+        # add tribe coloured rectangle
+        tribe_c = row_colors.loc[row_colors.index == species_name][0]
+        rectangle = patches.Rectangle((rect_x, rect_y), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+                                      facecolor=tribe_c)
+        axes[species_n].add_patch(rectangle)
 
         if species_n % cols == 0 and species_n >= cols*(rows-1):
             axes[species_n].set_xlabel("Time (h)", fontsize=MEDIUM_SIZE)
             axes[species_n].xaxis.set_major_locator(MultipleLocator(0.25))
             axes[species_n].xaxis.set_major_formatter(date_form)
-            axes[species_n].set_yticks([0, 25, 50, 75])
+            axes[species_n].set_yticks([-2.5, 0, 2.5, 5])
             axes[species_n].tick_params(axis='y', labelsize=MEDIUM_SIZE)
-            axes[species_n].set_ylabel('Speed mm/s', fontsize=MEDIUM_SIZE)
+            axes[species_n].set_ylabel('Speed z-score', fontsize=MEDIUM_SIZE)
             axes[species_n].spines['top'].set_visible(False)
             axes[species_n].spines['right'].set_visible(False)
             for axis in ['bottom', 'left']:
@@ -386,7 +411,7 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
             plt.setp(axes[species_n].xaxis.get_majorticklabels(), rotation=70)
         elif species_n % cols == 0:
 
-            axes[species_n].set_yticks([0, 25, 50, 75])
+            axes[species_n].set_yticks([-2.5, 0, 2.5, 5])
             axes[species_n].set_xticks([])
             axes[species_n].tick_params(axis='y', labelsize=MEDIUM_SIZE)
             axes[species_n].spines['top'].set_visible(False)
@@ -416,8 +441,8 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
             axes[species_n].spines['bottom'].set_visible(False)
             axes[species_n].spines['left'].set_visible(False)
         axes[species_n].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S'))
-        axes[species_n].set_ylim(0, span_max)
-    for empty_plots in np.arange(n_plots-(n_plots-len(sorted_loadings.species)), n_plots):
+        axes[species_n].set_ylim(span_min, span_max)
+    for empty_plots in np.arange(n_plots-(n_plots-len(data_input_norm.columns)), n_plots):
         axes[empty_plots].set_xticklabels([])
         axes[empty_plots].set_xticks([])
         axes[empty_plots].set_yticks([])

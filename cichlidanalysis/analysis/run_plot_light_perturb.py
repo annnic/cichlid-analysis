@@ -16,7 +16,7 @@ from cichlidanalysis.utils.timings import load_timings_14_8
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure, plot_speed_30m_mstd_figure_light_perturb
 from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure_timed_perturb, daily_ave_spd_figure_timed_perturb_darkdark
 from cichlidanalysis.plotting.plot_light_perturb import plot_ld_dd_stripplot, plot_ld_dd_dn_dif_stripplot, plot_daily_activity_light, plot_stripplots_light_perturb
-from cichlidanalysis.analysis.run_cosinorpy_periodogram import periodogram_df_an
+from cichlidanalysis.analysis.cosinorpy_periodogram import periodogram_df_an
 
 
 if __name__ == '__main__':

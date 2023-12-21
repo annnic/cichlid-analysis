@@ -100,6 +100,11 @@ if __name__ == '__main__':
         corr_vals_long_weekly = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single', False)
         plot_corr_coefs(rootdir, corr_vals_long_weekly, feature, 'weekly')
 
+    # save out corr_vals
+    corr_vals_long.to_csv(os.path.join(rootdir, 'corr_vals_long_daily.csv'), sep=',', index=False, encoding='utf-8')
+    corr_vals_long_weekly.to_csv(os.path.join(rootdir, 'corr_vals_long_weekly.csv'), sep=',', index=False,
+                                 encoding='utf-8')
+
     # ### correlations for species and clusters ####
     run = False
     if run:

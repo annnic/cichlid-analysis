@@ -180,6 +180,10 @@ def plot_variance_explained(rootdir, pca):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     f, ax = plt.subplots(figsize=(1.5, 1.5))
+
+    # note that explained_variance_ratio_ is the percentage of explained variance, while explained_variance_ are the
+    # eigenvalues or variance of the covariance matrix.
+    # https://stackoverflow.com/questions/57293716/sklearn-pca-explained-variance-and-explained-variance-ratio-difference
     plt.bar(np.arange(1, len(pca.explained_variance_ratio_)+1), pca.explained_variance_ratio_*100, color='lightgrey')
     plt.plot(np.arange(1, len(pca.explained_variance_ratio_)+1), np.cumsum(pca.explained_variance_ratio_*100),
              color='grey', marker='o', linestyle='-', linewidth=1, markersize=1)
