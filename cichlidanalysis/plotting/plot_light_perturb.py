@@ -9,12 +9,12 @@ from scipy import stats
 from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure_timed_perturb, daily_ave_spd_figure_timed_perturb_darkdark
 
 
-def plot_ld_dd_stripplot(rootdir, spd_aves_dn, custom_palette_2, SMALLEST_SIZE, species_f, ttest_control, ttest_dd):
+def plot_ld_dd_stripplot(rootdir, spd_aves_dn, custom_palette_2, SMALLEST_SIZE, species_f, ttest_control, ttest_dd, ymax=50):
     plt.figure(figsize=(1.5, 1))
     ax = sns.stripplot(data=spd_aves_dn, x='condition', y='speed_mm', hue='condition', s=2,
                        palette=custom_palette_2)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    ax.set_ylim([0, 80])
+    ax.set_ylim([0, ymax])
     plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
     plt.title(species_f, fontsize=SMALLEST_SIZE)
 
@@ -33,8 +33,8 @@ def plot_ld_dd_stripplot(rootdir, spd_aves_dn, custom_palette_2, SMALLEST_SIZE, 
     ax.tick_params(width=0.5)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    plt.text(-0.3, 80, round(ttest_control[1], 3))
-    plt.text(1.7, 80, round(ttest_dd[1], 3))
+    plt.text(-0.3, ymax, round(ttest_control[1], 3))
+    plt.text(1.7, ymax, round(ttest_dd[1], 3))
     plt.tight_layout()
     plt.savefig(
         os.path.join(rootdir, "speed_figure_ld-dd_dn_stripplot_10-14h_{0}.pdf".format(species_f.replace(' ', '-'))),
@@ -49,7 +49,7 @@ def plot_ld_dd_dn_dif_stripplot(rootdir, spd_aves_condition, custom_palette, cus
                        palette=custom_palette,
                        order=custom_order)
     # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    ax.set_ylim([-50, 28])
+    # ax.set_ylim([-52, 28])
     plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
     plt.title(species_f, fontsize=SMALLEST_SIZE)
 
@@ -101,6 +101,11 @@ def plot_daily_activity_light(rootdir, fish_tracks_bin, epochs, change_times_uni
 
             daily_ave_spd_figure_timed_perturb_darkdark(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit,
                                                ymax=100, label=epoch)
+
+            daily_ave_spd_figure_timed_perturb(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit,
+                                               ymax=75, label=epoch)
+            daily_ave_spd_figure_timed_perturb_darkdark(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit,
+                                               ymax=40, label=epoch)
     return
 
 
@@ -164,5 +169,5 @@ def plot_stripplots_light_perturb(rootdir, fish_tracks_bin, tag1, tag2, epochs_c
                                    spd_aves_dn.speed_mm[spd_aves_dn.condition == 'n_dark:dark'])
         custom_palette_2 = ["gold", "lightblue", "cadetblue", "lightblue"]  # "#EAF5F9",
 
-        plot_ld_dd_stripplot(rootdir, spd_aves_dn, custom_palette_2, SMALLEST_SIZE, species_f, ttest_control, ttest_dd)
+        plot_ld_dd_stripplot(rootdir, spd_aves_dn, custom_palette_2, SMALLEST_SIZE, species_f, ttest_control, ttest_dd, ymax=50)
     return

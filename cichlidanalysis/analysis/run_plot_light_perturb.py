@@ -23,6 +23,7 @@ if __name__ == '__main__':
     rootdir = select_dir_path()
 
     fish_tracks_bin = load_bin_als_files(rootdir, "*als_30m.csv")
+    fish_tracks_bin_1m = load_bin_als_files(rootdir, "*als_1m.csv")
 
     fish_IDs = fish_tracks_bin['FishID'].unique()
     # get timings
@@ -32,6 +33,7 @@ if __name__ == '__main__':
 
     # convert ts to datetime
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
+    fish_tracks_bin_1m['ts'] = pd.to_datetime(fish_tracks_bin_1m['ts'])
 
     ### need to convert tv from str to datetime
     # speed_mm (30m bins) for each species (mean  +- std)
@@ -40,15 +42,14 @@ if __name__ == '__main__':
 
     # day 2 to 8am on day 5 = baseline
     # day 4 8am until end
-    epochs = {'epoch_1': [pd.to_datetime('1970-01-02 07:30:00'), pd.to_datetime('1970-01-05 08:00:00')],
-              'epoch_2': [pd.to_datetime('1970-01-05 07:30:00'), pd.to_datetime('1970-01-08 08:00:00')]}
-
-    plot_daily_activity_light(rootdir, fish_tracks_bin, epochs, change_times_unit)
-
+    # epochs = {'epoch_1': [pd.to_datetime('1970-01-02 07:30:00'), pd.to_datetime('1970-01-05 08:00:00')],
+    #           'epoch_2': [pd.to_datetime('1970-01-05 07:30:00'), pd.to_datetime('1970-01-08 08:00:00')]}
     tag1 = 'control'
     tag2 = 'dark:dark'
-    epochs_color = {tag1: [pd.to_datetime('1970-01-02 00:00:00'), pd.to_datetime('1970-01-05 8:00:00')],
-              tag2: [pd.to_datetime('1970-01-05 8:00:00'), pd.to_datetime('1970-01-08 8:00:00')]}
+    epochs = {tag1: [pd.to_datetime('1970-01-02 07:30:00'), pd.to_datetime('1970-01-05 8:00:00')],
+              tag2: [pd.to_datetime('1970-01-05 07:30:00'), pd.to_datetime('1970-01-08 8:00:00')]}
+
+    plot_daily_activity_light(rootdir, fish_tracks_bin, epochs, change_times_unit)
 
     # define day or nighttime
     fish_tracks_bin['time_of_day_m'] = fish_tracks_bin.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 +
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     fish_tracks_bin.loc[fish_tracks_bin.time_of_day_m > change_times_m[3], 'daynight'] = "n"
     print("added night and day column")
 
-    plot_stripplots_light_perturb(rootdir, fish_tracks_bin, tag1, tag2, epochs_color)
+    plot_stripplots_light_perturb(rootdir, fish_tracks_bin, tag1, tag2, epochs)
 
     #### cosinor analysis
     from CosinorPy import cosinor, cosinor1
@@ -90,12 +91,8 @@ if __name__ == '__main__':
             sp_spd_days_df['test'] = epoch
 
             # cosinor.plot_data(sp_spd_days_df, names=[], folder=rootdir, prefix=species_f)
-            cosinor.periodogram_df(sp_spd_days_df, folder=rootdir)
-            # periodogram_df_an(sp_spd_days_df, folder=rootdir)
-            # for i in plt.get_fignums():
-            #     plt.figure(i)
-            #     plt.savefig('periodogram_{}_{}_%d.png'.format(species_f, epoch) % i, dpi=350)
-            # plt.close('all')
+            # cosinor.periodogram_df(sp_spd_days_df, folder=rootdir)
+            periodogram_df_an(sp_spd_days_df, folder=rootdir, prefix=species_f)
 
             df_results = cosinor.fit_group(sp_spd_days_df, n_components=[1, 2, 3], period=24)  # folder=""
             for i in plt.get_fignums():
@@ -109,7 +106,6 @@ if __name__ == '__main__':
             df_best_models = cosinor.get_best_models(sp_spd_days_df, df_results, n_components=[1, 2, 3])
             cosinor.plot_df_models(sp_spd_days_df, df_best_models, folder=rootdir)
 
-
             # fs = 0.5
             # f, Pxx_den = signal.periodogram(sp_spd_days, fs)
             # plt.semilogy(f, Pxx_den)
@@ -118,6 +114,23 @@ if __name__ == '__main__':
             # plt.ylabel('PSD [V**2/Hz]')
             # plt.savefig('periodogram_test_{}_{}_%d.png'.format(species_f, epoch) % i)
             # plt.close('all')
+
+### 1min speed periodograms
+    for species_f in all_species:
+        spd_1m = fish_tracks_bin_1m[fish_tracks_bin_1m.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd_1m = spd_1m.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        for epoch in epochs:
+            filtered_spd_1m = sp_spd_1m[(epochs[epoch][0] < sp_spd_1m.index) & (sp_spd_1m.index < epochs[epoch][1])]
+            # all days
+            sp_spd_days_1m = filtered_spd_1m.mean(axis=1)
+            sp_spd_ts_1m = np.arange(0, len(sp_spd_days_1m))/60
+
+            ##### cosinorpy analysis ########
+            sp_spd_days_df_1m = pd.DataFrame({'x': sp_spd_ts_1m, 'y': sp_spd_days_1m.reset_index(drop=True)})
+            sp_spd_days_df_1m['test'] = epoch
+
+            cosinor.periodogram_df(sp_spd_days_df_1m, folder=rootdir)
 
 
     cosinor1.fit_cosinor(np.arange(0, 48), sp_spd_ave_mean.reset_index(drop=True), 48, save_to=(rootdir + "/test"), plot_on=True)

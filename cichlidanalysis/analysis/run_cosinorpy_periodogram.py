@@ -9,7 +9,7 @@ import os
 # adapted from https://github.com/mmoskon/CosinorPy/blob/master/CosinorPy/cosinor.py to make the figure
 
 
-def periodogram_df_an(df, folder='', **kwargs):
+def periodogram_df_an(df, folder='', prefix='', **kwargs):
     names = list(df.test.unique())
     names.sort()
 
@@ -20,10 +20,11 @@ def periodogram_df_an(df, folder='', **kwargs):
         else:
             save_to = ""
 
-        periodogram_an(x, y, save_to=save_to, name=name, **kwargs)
+        periodogram_an(x, y, save_to=save_to, name=name, prefix=prefix, **kwargs)
 
 
-def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='', save_to='', prominent=False, max_per=240):
+def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='', save_to='', prominent=False,
+                   max_per=240, prefix='',):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
@@ -139,8 +140,8 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
     # plt.tight_layout()
 
     if save_to:
-        plt.savefig(save_to + '.pdf')
-        plt.savefig(save_to + '.png')
+        plt.savefig(save_to + prefix + '.pdf')
+        # plt.savefig(save_to + prefix + '.png')
         plt.close()
     else:
         plt.show()

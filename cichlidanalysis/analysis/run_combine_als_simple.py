@@ -39,7 +39,7 @@ if __name__ == '__main__':
     TIME_WINDOW_SEC = 60
     FRACTION_THRESH = 0.05
 
-    binning_m = 5
+    binning_m = 30
 
     rootdir = select_dir_path()
 
@@ -93,14 +93,14 @@ if __name__ == '__main__':
     fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
 
     # resample data
-    fish_tracks_bin = fish_tracks.groupby('FishID').resample((binning_m+'T'), on='ts').mean()
+    fish_tracks_bin = fish_tracks.groupby('FishID').resample((str(binning_m)+'T'), on='ts').mean()
     fish_tracks_bin.reset_index(inplace=True)
-    print("calculated resampled 30min data")
+    print("calculated resampled {}min data".format(binning_m))
 
     # add new column with Day or Night
     t2 = time.time()
     fish_tracks_bin = fish_tracks_bin.dropna()  # occaisionally have NaTs in ts, this removes them.
-    fish_tracks_bin['time_of_day_m'] = fish_tracks_bin.ts.apply(
+    fish_tracks_bin.loc[:, 'time_of_day_m'] = fish_tracks_bin.ts.apply(
         lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
     t3 = time.time()
     print("time to add time_of_day tracks {:.0f} sec".format(t3 - t2))
@@ -120,17 +120,7 @@ if __name__ == '__main__':
     fish_tracks_bin.loc[fish_tracks_bin.time_of_day_m > change_times_m[3], 'daynight'] = "n"
     print("Finished adding bin species and daynight")
 
-
     # save out downsampled als
     for species in all_species:
         fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
     print("Finished saving out 30min data")
-
-    # # feature vectors: for each fish readout vector of feature values
-    # create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
-    # create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_bin, rootdir)
-
-fish_tracks_bin.columns
-Index(['FishID', 'ts', 'speed_mm', 'time_of_day_m', 'movement', 'rest',
-       'vertical_pos', 'horizontal_pos', 'species', 'sex', 'daynight'],
-      dtype='object')
