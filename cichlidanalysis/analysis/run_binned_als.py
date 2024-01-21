@@ -87,16 +87,16 @@ if __name__ == '__main__':
 
     # ###########################
     ## correlations ##
-    # correlations for days across week for an individual
-    week_corr(rootdir, fish_tracks_bin, 'rest')
+    # correlations for days across week for an individual - intra-individual variability
+    week_corr(rootdir, fish_tracks_bin, 'speed_mm')
 
     features = ['speed_mm', 'rest']
     for feature in features:
-        # correlations for individuals of species across daily average of feature
+        # correlations for individuals of species across daily average of feature - daily inter-individual variability
         corr_vals_long = get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes)
         plot_corr_coefs(rootdir, corr_vals_long, feature, 'daily')
 
-        # correlations for individuals across week
+        # correlations for individuals across week - weekly inter-individual variability
         corr_vals_long_weekly = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single', False)
         plot_corr_coefs(rootdir, corr_vals_long_weekly, feature, 'weekly')
 

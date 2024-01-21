@@ -24,7 +24,7 @@ def periodogram_df_an(df, folder='', prefix='', **kwargs):
 
 
 def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='', save_to='', prominent=False,
-                   max_per=240, prefix='',):
+                   max_per=240, prefix=''):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})

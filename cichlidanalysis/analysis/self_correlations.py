@@ -105,6 +105,38 @@ def species_daily_corr(rootdir, averages_feature, feature, label, link_method='s
     plt.close()
 
 
+
+def plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature, title):
+
+    # font sizes
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    f, ax = plt.subplots(figsize=(2, 6))
+    sns.boxplot(data=mean_corr_per_fish, x='corr_coef', y='species', ax=ax, fliersize=0, color='gainsboro',
+                order=mean_corr_per_fish.groupby('species').mean().sort_values("corr_coef").index.to_list(),
+                linewidth=1)
+    sns.stripplot(data=mean_corr_per_fish, x='corr_coef', y='species', color=".2", ax=ax, size=2,
+                  order=mean_corr_per_fish.groupby('species').mean().sort_values("corr_coef").index.to_list())
+    ax.set(xlabel='Correlation', ylabel='Species')
+    ax.set(xlim=(-1, 1))
+    ax = plt.axvline(0, ls='--', color='k', linewidth=1)
+    ax = plt.gca()
+    spines = ["top", "right"]
+    for s in spines:
+        ax.spines[s].set_visible(False)
+    ax.spines['left'].set_linewidth(0.5)
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "intra_inidvidual_variability_fish_corr_coefs_{0}_{1}.pdf".format(feature, title)))
+    plt.close()
+    return
+
+
 def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """ Plots corr matrix of clustered species by given feature
 
@@ -118,6 +150,7 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
 
         fishes = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, 'FishID'].unique()
         first = True
+        first2 = True
 
         for fish in fishes:
             print(fish)
@@ -151,6 +184,14 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "individual_day_corr_coef_by_30min_{0}_{1}.png".format(feature, species_i)))
         plt.close()
+
+        # find mean for each fish and save
+        if first2:
+            mean_corr_per_fish = pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})
+            first2 = False
+        else:
+            mean_corr_per_fish = pd.concat([mean_corr_per_fish, pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})], axis=0)
+
 
 
 def get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes):
