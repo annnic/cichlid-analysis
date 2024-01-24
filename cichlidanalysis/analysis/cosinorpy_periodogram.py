@@ -9,7 +9,7 @@ import os
 # adapted from https://github.com/mmoskon/CosinorPy/blob/master/CosinorPy/cosinor.py to make the figure
 
 
-def periodogram_df_an(df, folder='', prefix='', **kwargs):
+def periodogram_df_an(df, folder='', prefix='', title='tag', **kwargs):
     names = list(df.test.unique())
     names.sort()
 
@@ -20,11 +20,12 @@ def periodogram_df_an(df, folder='', prefix='', **kwargs):
         else:
             save_to = ""
 
-        periodogram_an(x, y, save_to=save_to, name=name, prefix=prefix, **kwargs)
+        peaks = periodogram_an(x, y, save_to=save_to, name=name, prefix=prefix, title=title, **kwargs)
+    return peaks
 
 
 def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='', save_to='', prominent=False,
-                   max_per=240, prefix=''):
+                   max_per=240, prefix='', title=''):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
@@ -76,7 +77,7 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
     Pxx = Pxx[per <= max_per]
     per = per[per <= max_per]
 
-    plt.figure(figsize=(1.5, 1.5))
+    plt.figure(figsize=(1.5, 1.5)) # 1.3 for melatonin figure
     try:
         if logscale:
             plt.semilogx(per, Pxx, 'ko', markersize=1)
@@ -136,15 +137,15 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.set_xticks([0, 12, 24, 48])
-
-    # plt.tight_layout()
+    ax.set_ylim([0, T*28]) # 14 for melatonin figure, 18 for supplement
+    ax.set_xlim([0, 72])
 
     if save_to:
-        plt.savefig(save_to + prefix + '.pdf')
+        # plt.savefig(save_to + prefix + '.pdf')
         plt.tight_layout()
-        plt.savefig(save_to + prefix + '_tight.pdf')
+        plt.savefig(save_to + '_' + title + '_tight.pdf')
         # plt.savefig(save_to + prefix + '.png')
         plt.close()
     else:
         plt.show()
-    return
+    return locs

@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib as matplotlib
 import numpy as np
 import pandas as pd
-import scipy.cluster.hierarchy as sch
 
 from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave
 
@@ -106,7 +105,7 @@ def species_daily_corr(rootdir, averages_feature, feature, label, link_method='s
 
 
 
-def plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature, title):
+def plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature):
 
     # font sizes
     SMALL_SIZE = 6
@@ -132,12 +131,12 @@ def plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature, title
     ax.tick_params(width=0.5)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "intra_inidvidual_variability_fish_corr_coefs_{0}_{1}.pdf".format(feature, title)))
+    plt.savefig(os.path.join(rootdir, "intra_individual_variability_fish_corr_coefs_{0}.pdf".format(feature)))
     plt.close()
     return
 
 
-def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
+def intra_individ_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -146,11 +145,11 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """
     species = fish_tracks_ds['species'].unique()
 
+    first2 = True
     for species_i in species:
 
         fishes = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, 'FishID'].unique()
         first = True
-        first2 = True
 
         for fish in fishes:
             print(fish)
@@ -188,9 +187,15 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
         # find mean for each fish and save
         if first2:
             mean_corr_per_fish = pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})
+            mean_corr_per_fish['species'] = species_i
             first2 = False
         else:
-            mean_corr_per_fish = pd.concat([mean_corr_per_fish, pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})], axis=0)
+            mean_corr_per_fish_sp = pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})
+            mean_corr_per_fish_sp['species'] = species_i
+            mean_corr_per_fish = pd.concat([mean_corr_per_fish, mean_corr_per_fish_sp], axis=0)
+    mean_corr_per_fish = mean_corr_per_fish.reset_index(drop=True)
+    plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature)
+    return mean_corr_per_fish
 
 
 

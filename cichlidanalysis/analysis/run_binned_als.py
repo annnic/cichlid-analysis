@@ -14,7 +14,7 @@ from cichlidanalysis.analysis.processing import feature_daily, species_feature_f
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
 from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr, \
-    plot_corr_coefs, get_corr_coefs_daily, week_corr
+    plot_corr_coefs, get_corr_coefs_daily, intra_individ_corr
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks, crespuscular_weekly_fish, \
     crespuscular_daily_ave_fish
 from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, \
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # ###########################
     ## correlations ##
     # correlations for days across week for an individual - intra-individual variability
-    week_corr(rootdir, fish_tracks_bin, 'speed_mm')
+    mean_corr_per_fish = intra_individ_corr(rootdir, fish_tracks_bin, 'speed_mm')
 
     features = ['speed_mm', 'rest']
     for feature in features:
@@ -101,6 +101,7 @@ if __name__ == '__main__':
         plot_corr_coefs(rootdir, corr_vals_long_weekly, feature, 'weekly')
 
     # save out corr_vals
+    mean_corr_per_fish.to_csv(os.path.join(rootdir, 'mean_corr_per_fish.csv'), sep=',', index=False, encoding='utf-8')
     corr_vals_long.to_csv(os.path.join(rootdir, 'corr_vals_long_daily.csv'), sep=',', index=False, encoding='utf-8')
     corr_vals_long_weekly.to_csv(os.path.join(rootdir, 'corr_vals_long_weekly.csv'), sep=',', index=False,
                                  encoding='utf-8')
@@ -245,3 +246,13 @@ if __name__ == '__main__':
     #     _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
 
     plot_combined_v_position(rootdir, fish_tracks_bin, fish_diel_patterns)
+
+    # save out table S1
+    fish_tracks_bin_table = fish_tracks_bin.loc[:, ['FishID', 'sex', 'species_true', 'species', 'tribe', 'diet']].drop_duplicates()
+
+    sexes = fish_tracks_bin_table.groupby("species")['sex'].value_counts().unstack(fill_value=0).reset_index()
+    sexes['fish_N'] = sexes.sum(axis=1)
+    fish_tracks_bin_table_sp = fish_tracks_bin.loc[:, ['species_true', 'species', 'tribe', 'diet']].drop_duplicates().reset_index(drop=True)
+    table1 = pd.merge(fish_tracks_bin_table_sp, sexes, on='species')
+    table1.to_csv(os.path.join(rootdir, 'table_1.csv'), sep=',', index=False, encoding='utf-8')
+
