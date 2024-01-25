@@ -15,18 +15,10 @@ import numpy as np
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.als_files import load_als_files
-from cichlidanalysis.io.io_feature_vector import create_fv1, create_fv2
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
-from cichlidanalysis.analysis.bouts import find_bouts_input
-from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
-from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
-from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd, plot_speed_30m_sex, \
-    plot_speed_30m_mstd_figure
-from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
-    plot_bout_lengths_dn_move, plot_movement_30m_sex
-from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn, plot_rest_sex
+from cichlidanalysis.analysis.behavioural_state import define_rest
+
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -39,7 +31,7 @@ if __name__ == '__main__':
     TIME_WINDOW_SEC = 60
     FRACTION_THRESH = 0.05
 
-    binning_m = 30
+    binning_m = 10
 
     rootdir = select_dir_path()
 
@@ -123,4 +115,4 @@ if __name__ == '__main__':
     # save out downsampled als
     for species in all_species:
         fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
-    print("Finished saving out 30min data")
+    print("Finished saving out {}min data".format(binning_m))

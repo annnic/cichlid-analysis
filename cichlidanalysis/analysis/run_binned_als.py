@@ -31,8 +31,8 @@ from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def setup_run_binned(rootdir):
-    fish_tracks_bin_i = load_bin_als_files(rootdir, "*als_30m.csv")
+def setup_run_binned(rootdir, als_type='*als_30m.csv'):
+    fish_tracks_bin_i = load_bin_als_files(rootdir, als_type)
     fish_tracks_bin_i = fish_tracks_bin_i.reset_index(drop=True)
     fish_tracks_bin_i['time_of_day_dt'] = fish_tracks_bin_i.ts.apply(
         lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
