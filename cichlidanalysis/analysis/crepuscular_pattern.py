@@ -58,7 +58,7 @@ def crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_ds, species):
     plt.close('all')
 
 
-def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
+def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species, change_times_m, bin_size_min=30):
     """ Finds peaks in crepuscular periods for the weekly data of each fish for each species
 
     :param rootdir:
@@ -68,54 +68,56 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
     :return:
     """
 
-    border_bottom = np.ones(48) * 1.05
-    dawn_s, dawn_e, dusk_s, dusk_e = [6 * 2, 8 * 2, 18 * 2, 20 * 2]
-    border_bottom[6 * 2:8 * 2] = 0
-    border_bottom[18 * 2:20 * 2] = 0
-
-    border_bottom_week = np.concatenate((border_bottom, border_bottom, border_bottom, border_bottom, border_bottom,
-                                         border_bottom, border_bottom))
-    border_top_week = np.ones(48 * 7)
+    num_day_bins, bins_per_h, _, _, _, _, _, border_bottom_week, border_top_week = peak_borders(bin_size_min, change_times_m)
 
     peak_prom = 0.15
     if feature == 'speed_mm':
         border_bottom_week = border_bottom_week * 200
         border_top_week = border_top_week * 200
         peak_prom = 7
+    dawn_s, dawn_e, dusk_s, dusk_e = (change_times_m[0]-60)/60, (change_times_m[0]+60)/60, (change_times_m[3]-60)/60, (change_times_m[3] + 60) / 60
 
     date_form = DateFormatter("%H")
 
-    for species_name in species:
+    for species_name in fish_tracks_ds.species.unique():
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
 
         fig1, ax1 = plt.subplots(figsize=(10, 5))
         sns.heatmap(fish_feature.T, cmap="Greys")
 
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-        ax2.set_ylabel(feature)
-        for day in range(7):
-            ax2.axvspan(dawn_s + day * 48, dawn_e + day * 48, color='wheat', alpha=0.5, linewidth=0)
-            ax2.axvspan(dusk_s + day * 48, dusk_e + day * 48, color='wheat', alpha=0.5, linewidth=0)
+        fig2, ax2 = plt.subplots(len(fish_feature.columns), 1, figsize=(6, 2*len(fish_feature.columns)))
+        ax2[-1].set_ylabel(feature)
+        for fish, fish_name in enumerate(fish_feature.columns):
+            for day in range(7):
+                ax2[fish].axvspan(dawn_s * bins_per_h + day * num_day_bins, dawn_e * bins_per_h + day * num_day_bins,
+                            color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_s * bins_per_h + day * num_day_bins, dusk_e * bins_per_h + day * num_day_bins,
+                                  color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(0 + day * num_day_bins, dawn_s * bins_per_h + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_e * bins_per_h + day * num_day_bins, num_day_bins + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
 
-        for i in np.arange(0, len(fish_feature.columns)):
-            x = fish_feature.iloc[:, i]
-            peaks, peak_prop = find_peaks(x, distance=4, prominence=peak_prom, height=(border_bottom_week[0:x.shape[0]],
+
+            x = fish_feature.iloc[:, fish]
+            peaks, peak_prop = find_peaks(x, distance=bins_per_h*2, prominence=peak_prom, height=(border_bottom_week[0:x.shape[0]],
                                                                                        border_top_week[0:x.shape[0]]))
 
             np.around(peak_prop['peak_heights'], 2)
 
-            ax2.plot(x)
-            ax2.plot(peaks, x[peaks], "o", color="r")
-            plt.title(species_name)
+            ax2[fish].plot(x, linewidth= 0.5)
+            ax2[fish].plot(peaks, x[peaks], "o", c="r", markersize=3)
+            ax2[fish].title.set_text(fish_name)
 
-            ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
-        ax2.xaxis.set_major_locator(MultipleLocator(24))
-        ax2.xaxis.set_major_formatter(date_form)
-        plt.xlabel("Time (h)")
-        plt.ylabel("Speed (mm/s)")
-        sns.despine(top=True, right=True)
-        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_{}.png".format(species_name)), dpi=1200)
+            ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * fish) + 0.5, "o", color="r")
+            ax2[fish].xaxis.set_major_locator(MultipleLocator(num_day_bins))
+            ax2[fish].xaxis.set_major_formatter(date_form)
+            plt.xlabel("Time (h)")
+            plt.ylabel("Speed (mm/s)")
+            sns.despine(top=True, right=True)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_{}_bin_size_{}min.png".format(species_name, bin_size_min)), dpi=350)
         plt.close()
 
         ax1.xaxis.set_major_locator(MultipleLocator(24))
@@ -123,7 +125,7 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
         plt.xlabel("Time (h)")
         plt.ylabel("Speed (mm/s)")
         sns.despine(top=True, right=True)
-        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_heatmap_{}.png".format(species_name)), dpi=1200)
+        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_heatmap_{}.png".format(species_name)), dpi=350)
     return
 
 
@@ -298,26 +300,8 @@ def crepuscular_peaks_min(rootdir, feature, fish_tracks_ds, change_times_m, bin_
     :return:
     """
 
-    # define borders - depends on bin size. e.g. 1h bins = 24
-    num_day_bins = 24*60/bin_size_min
-    bins_per_h = 60/bin_size_min
-    if (num_day_bins % 1) != 0:
-        print("The 24h day must be divisible by this minute bin size")
-        return
-    num_day_bins = int(num_day_bins)
-    border_top = np.ones(num_day_bins)
-    border_bottom = np.ones(num_day_bins) * 1.05
-    dawn_border_bottom = copy.copy(border_bottom)
-    dawn_border_bottom[int(((change_times_m[0] - 60)/60)*bins_per_h):int(((change_times_m[0] + 60)/60)*bins_per_h)] = 0
-    dusk_border_bottom = copy.copy(border_bottom)
-    dusk_border_bottom[int(((change_times_m[3] - 60)/60)*bins_per_h):int(((change_times_m[3] + 60)/60)*bins_per_h)] = 0
-
-    border = np.zeros(num_day_bins)
-    day_border = copy.copy(border)
-    day_border[int(((change_times_m[0] + 60)/60)*bins_per_h):int(((change_times_m[3] - 60)/60)*bins_per_h)] = 1
-    night_border = copy.copy(border)
-    night_border[0:int(((change_times_m[0] - 60)/60)*bins_per_h)] = 1
-    night_border[int(((change_times_m[3] + 60)/60)*bins_per_h):int(24*bins_per_h)] = 1
+    num_day_bins, bins_per_h, dawn_border_bottom, dusk_border_bottom, border_top, day_border, night_border, _, _ = \
+        peak_borders(bin_size_min, change_times_m)
 
     if feature == 'speed_mm':
         border_top = border_top * 200

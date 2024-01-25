@@ -9,8 +9,11 @@
 import warnings
 import time
 import os
+import copy
 
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
@@ -18,22 +21,21 @@ from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
 from cichlidanalysis.analysis.behavioural_state import define_rest
+from cichlidanalysis.analysis.processing import smooth_speed
+
 
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-if __name__ == '__main__':
+
+def combine_binning(rootdir, binning_m=30):
     # ### Movement moving/not-moving use 15mm/s threshold ####
     MOVE_THRESH = 15
 
     # ### Behavioural state - calculated from Movement ###
     TIME_WINDOW_SEC = 60
     FRACTION_THRESH = 0.05
-
-    binning_m = 10
-
-    rootdir = select_dir_path()
 
     t0 = time.time()
     fish_tracks = load_als_files(rootdir)
@@ -116,3 +118,73 @@ if __name__ == '__main__':
     for species in all_species:
         fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
     print("Finished saving out {}min data".format(binning_m))
+    return
+
+
+def combine_smoothing(rootdir, smoothing_win_f, down_sample_bin):
+
+    t0 = time.time()
+    fish_tracks = load_als_files(rootdir)
+    t1 = time.time()
+    print("time to load tracks {:.0f} sec".format(t1 - t0))
+
+    meta = load_meta_files(rootdir)
+
+    # get each fish ID
+    fish_IDs = fish_tracks['FishID'].unique()
+
+    # data gets heavy so remove what is not necessary
+    fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
+
+    first = True
+    for fish in fish_tracks.FishID.unique():
+        spd_fish_sm = pd.Series(smooth_speed(fish_tracks.loc[fish_tracks.FishID == fish, "speed_mm"],
+                                             win_size=smoothing_win_f)[:, 0], name='spd_mm_sm')
+
+        fish_tracks_sm = fish_tracks.loc[fish_tracks.FishID == fish, "ts"].to_frame().join(spd_fish_sm)
+        fish_tracks_sm_ds_fish = fish_tracks_sm.loc[::600].reset_index(drop=True)
+
+        fish_tracks_sm_ds_fish['FishID'] = fish
+
+        if first:
+            fish_tracks_sm_ds = fish_tracks_sm_ds_fish
+            first = False
+        else:
+            fish_tracks_sm_ds = pd.concat([fish_tracks_sm_ds, fish_tracks_sm_ds_fish])
+
+        # time_s = 30*60
+        # time_e = 32*60
+        # # plt.plot(fish_tracks.loc[time_s*10*60:time_e*10*60, 'ts'], fish_tracks.loc[time_s*10*60:time_e*10*60, 'speed_mm'], c='orange')
+        # plt.plot(fish_tracks_sm.loc[time_s*10*60:time_e*10*60, 'ts'], fish_tracks_sm.loc[time_s*10*60:time_e*10*60, 'spd_mm_sm'], c='blue')
+        # # plt.plot(fish_tracks_sm_1min.loc[time_s*10*60:time_e*10*60, 'ts'], fish_tracks_sm_1min.loc[time_s*10*60:time_e*10*60, 'spd_mm_sm'], c='blue')
+        # plt.plot(fish_tracks_sm_ds.loc[time_s*10*60:time_e*10*60, 'ts'], fish_tracks_sm_ds.loc[time_s*10*60:time_e*10*60, 'spd_mm_sm'], c='yellow')
+        # plt.plot(fish_tracks_bin_f.loc[time_s/30:time_e/30, 'ts'], fish_tracks_bin_f.loc[time_s/30:time_e/30, 'speed_mm'], c='green')
+        # plt.plot(fish_tracks_bin_10.loc[time_s/10:time_e/10, 'ts'], fish_tracks_bin_10.loc[time_s/10:time_e/10, 'speed_mm'], c='purple')
+        # # plt.plot(fish_tracks_bin_1.loc[time_s/1:time_e/1, 'ts'], fish_tracks_bin_1.loc[time_s/1:time_e/1, 'speed_mm'], c='red')
+        # plt.savefig(os.path.join(rootdir, "test_smoothing.png"))
+        # plt.close()
+
+    # add back 'species', 'sex'
+    for col_name in ['species', 'sex']:
+        add_col(fish_tracks_sm_ds, col_name, fish_IDs, meta)
+    all_species = fish_tracks_sm_ds['species'].unique()
+
+    # save out downsampled als
+    for species in all_species:
+        fish_tracks_sm_ds.to_csv(os.path.join(rootdir, "{}_sm{}_als_{}m.csv".format(species, smoothing_win_f, down_sample_bin)))
+    print("Finished saving out double smoothed down-sampled {}min data".format(down_sample_bin))
+    return
+
+
+if __name__ == '__main__':
+
+    rootdir = select_dir_path()
+
+    # combine_binning(rootdir, binning_m=30)
+
+    fps = 10
+    smoothing_win_f = 60*10*fps
+    down_sample_bin_min = 5
+    combine_smoothing(rootdir, smoothing_win_f, down_sample_bin_min)
+
+

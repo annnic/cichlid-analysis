@@ -258,6 +258,11 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
     :return:
     """
 
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
     dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
 
@@ -279,7 +284,7 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
                                   y='species',
                                   kind="box",
                                   legend=False,
-                                  height=10,
+                                  height=8,
                                   aspect=0.5,
                                   data=cres_peaks_ii.loc[cres_peaks_ii.twilight == period],
                                   fliersize=0,

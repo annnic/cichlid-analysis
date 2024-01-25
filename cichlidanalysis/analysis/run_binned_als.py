@@ -172,7 +172,7 @@ if __name__ == '__main__':
 
     # for plotting peaks of an individual species
     crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])
-    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])
+    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, ['Astbur'], change_times_m)
 
     # include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',
     #            'Neowal', 'Neofal']
