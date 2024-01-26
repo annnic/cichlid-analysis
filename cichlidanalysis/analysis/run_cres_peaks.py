@@ -8,10 +8,10 @@ import pandas as pd
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks_min, crespuscular_weekly_fish, \
-    crespuscular_daily_ave_fish
+    crespuscular_daily_ave_fish, crepuscular_peaks_min_daily
 from cichlidanalysis.analysis.run_binned_als import setup_run_binned
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
-    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc
+    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc, plot_cre_dawn_dusk_peak_loc_bin_size
 from cichlidanalysis.io.als_files import load_bin_als_files
 from cichlidanalysis.utils.timings import load_timings_14_8
 
@@ -19,7 +19,7 @@ from cichlidanalysis.utils.timings import load_timings_14_8
 if __name__ == '__main__':
     rootdir = select_dir_path()
 
-    bin_size_min = 30
+    bin_size_min = 10
     # fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, \
     # species_sixes = setup_run_binned(rootdir, als_type='*als_{}m.csv'.format(bin_size_min))
     fish_tracks_bin = load_bin_als_files(rootdir, '*als_{}m.csv'.format(bin_size_min))
@@ -33,10 +33,19 @@ if __name__ == '__main__':
 
     feature = 'speed_mm'
 
-    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, [''], change_times_m, bin_size_min=bin_size_min)
+    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
+    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
+
+    all_peaks_df = crepuscular_peaks_min_daily(rootdir, feature, fish_tracks_bin, change_times_m,
+                                               bin_size_min=bin_size_min, peak_prom=7)
+    plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, all_peaks_df, feature, change_times_m, name='average',
+                                         peak_feature='peak_loc',
+                                         bin_size_min=10)
+    # plot_cre_dawn_dusk_peak_loc(rootdir, all_peaks_df, feature, change_times_unit, name='average', peak_feature='peak_loc')
+
+
 
     # # get better look at the timing of peaks?
-    # cres_peaks, cres_peaks_indiv = crepuscular_peaks_min(rootdir, feature, fish_tracks_bin, change_times_m)
     # plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak_amplitude')
     # plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak')
     # plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks, feature, change_times_unit, name='average', peak_feature='peak_loc')
@@ -45,4 +54,3 @@ if __name__ == '__main__':
     # plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
     #
     # # for plotting peaks of an individual species
-    # crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])

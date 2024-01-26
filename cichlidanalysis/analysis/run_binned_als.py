@@ -171,8 +171,8 @@ if __name__ == '__main__':
     plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
     # for plotting peaks of an individual species
-    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, ['Astbur'])
-    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, ['Astbur'], change_times_m)
+    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, change_times_m)
+    crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, change_times_m)
 
     # include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',
     #            'Neowal', 'Neofal']

@@ -180,11 +180,11 @@ if __name__ == '__main__':
 
     rootdir = select_dir_path()
 
-    # combine_binning(rootdir, binning_m=30)
+    combine_binning(rootdir, binning_m=10)
 
-    fps = 10
-    smoothing_win_f = 60*10*fps
-    down_sample_bin_min = 5
-    combine_smoothing(rootdir, smoothing_win_f, down_sample_bin_min)
+    # fps = 10
+    # smoothing_win_f = 60*10*fps
+    # down_sample_bin_min = 5
+    # combine_smoothing(rootdir, smoothing_win_f, down_sample_bin_min)
 
 
