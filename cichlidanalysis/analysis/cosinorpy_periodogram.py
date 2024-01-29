@@ -9,7 +9,7 @@ import os
 # adapted from https://github.com/mmoskon/CosinorPy/blob/master/CosinorPy/cosinor.py to make the figure
 
 
-def periodogram_df_an(df, folder='', prefix='', title='tag', **kwargs):
+def periodogram_df_an(df, folder='', prefix='', title='tag', save=True, **kwargs):
     names = list(df.test.unique())
     names.sort()
 
@@ -20,12 +20,12 @@ def periodogram_df_an(df, folder='', prefix='', title='tag', **kwargs):
         else:
             save_to = ""
 
-        peaks = periodogram_an(x, y, save_to=save_to, name=name, prefix=prefix, title=title, **kwargs)
+        peaks = periodogram_an(x, y, save_to=save_to, name=name, prefix=prefix, title=title, save=save, **kwargs)
     return peaks
 
 
 def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='', save_to='', prominent=False,
-                   max_per=240, prefix='', title=''):
+                   max_per=240, prefix='', title='', save=True):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
@@ -122,30 +122,30 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
                 peak_label += "{:.2f}".format(loc) + ','
             peak_label += "{:.2f}".format(locs[-1])
 
-    plt.xlabel('period [hours]')
-    plt.ylabel('PSD')
-    plt.title(name + peak_label, fontsize=SMALLEST_SIZE)
+    if save:
+        plt.xlabel('period [hours]')
+        plt.ylabel('PSD')
+        plt.title(name + peak_label, fontsize=SMALLEST_SIZE)
 
-    # Adjust the offset for tick labels on all axes
-    plt.tick_params(axis='x', pad=0.5, length=2)
-    plt.tick_params(axis='y', pad=0.5, length=2)
+        # Adjust the offset for tick labels on all axes
+        plt.tick_params(axis='x', pad=0.5, length=2)
+        plt.tick_params(axis='y', pad=0.5, length=2)
 
-    ax = plt.gca()
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax.spines[axis].set_linewidth(0.5)
-    ax.tick_params(width=0.5)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.set_xticks([0, 12, 24, 48])
-    ax.set_ylim([0, T*28]) # 14 for melatonin figure, 18 for supplement
-    ax.set_xlim([0, 72])
+        ax = plt.gca()
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_xticks([0, 12, 24, 48])
+        ax.set_ylim([0, T * 28])  # 14 for melatonin figure, 18 for supplement
+        ax.set_xlim([0, 72])
 
-    if save_to:
         # plt.savefig(save_to + prefix + '.pdf')
         plt.tight_layout()
         plt.savefig(save_to + '_' + title + '_tight.pdf')
         # plt.savefig(save_to + prefix + '.png')
         plt.close()
     else:
-        plt.show()
+        plt.close()
     return locs

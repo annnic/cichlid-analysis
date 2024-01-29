@@ -19,7 +19,7 @@ from cichlidanalysis.utils.timings import load_timings_14_8
 if __name__ == '__main__':
     rootdir = select_dir_path()
 
-    bin_size_min = 10
+    bin_size_min = 30
     # fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, \
     # species_sixes = setup_run_binned(rootdir, als_type='*als_{}m.csv'.format(bin_size_min))
     fish_tracks_bin = load_bin_als_files(rootdir, '*als_{}m.csv'.format(bin_size_min))
@@ -33,14 +33,14 @@ if __name__ == '__main__':
 
     feature = 'speed_mm'
 
-    crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
+    # crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
     crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
 
     all_peaks_df = crepuscular_peaks_min_daily(rootdir, feature, fish_tracks_bin, change_times_m,
                                                bin_size_min=bin_size_min, peak_prom=7)
     plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, all_peaks_df, feature, change_times_m, name='average',
                                          peak_feature='peak_loc',
-                                         bin_size_min=10)
+                                         bin_size_min=bin_size_min)
     # plot_cre_dawn_dusk_peak_loc(rootdir, all_peaks_df, feature, change_times_unit, name='average', peak_feature='peak_loc')
 
 

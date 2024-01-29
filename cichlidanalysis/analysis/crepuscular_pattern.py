@@ -87,8 +87,8 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, change_times_m, b
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
 
-        fig1, ax1 = plt.subplots(figsize=(10, 5))
-        sns.heatmap(fish_feature.T, cmap="Greys")
+        # fig1, ax1 = plt.subplots(figsize=(10, 5))
+        # sns.heatmap(fish_feature.T, cmap="Greys")
 
         fig2, ax2 = plt.subplots(len(fish_feature.columns), 1, figsize=(6, 2*len(fish_feature.columns)))
         ax2[-1].set_ylabel(feature)
@@ -114,7 +114,7 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, change_times_m, b
             ax2[fish].plot(peaks, x[peaks], "o", c="r", markersize=3)
             ax2[fish].title.set_text(fish_name)
 
-            ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * fish) + 0.5, "o", color="r")
+            # ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * fish) + 0.5, "o", color="r")
             ax2[fish].xaxis.set_major_locator(MultipleLocator(num_day_bins))
             ax2[fish].xaxis.set_major_formatter(date_form)
             plt.xlabel("Time (h)")
@@ -124,12 +124,12 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, change_times_m, b
         plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_{}_bin_size_{}min.png".format(species_name, bin_size_min)), dpi=350)
         plt.close()
 
-        ax1.xaxis.set_major_locator(MultipleLocator(24))
-        ax1.xaxis.set_major_formatter(date_form)
-        plt.xlabel("Time (h)")
-        plt.ylabel("Speed (mm/s)")
-        sns.despine(top=True, right=True)
-        plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_heatmap_{}.png".format(species_name)), dpi=350)
+        # ax1.xaxis.set_major_locator(MultipleLocator(24))
+        # ax1.xaxis.set_major_formatter(date_form)
+        # plt.xlabel("Time (h)")
+        # plt.ylabel("Speed (mm/s)")
+        # sns.despine(top=True, right=True)
+        # plt.savefig(os.path.join(rootdir, "cres_peaks_weekly_heatmap_{}.png".format(species_name)), dpi=350)
     return
 
 

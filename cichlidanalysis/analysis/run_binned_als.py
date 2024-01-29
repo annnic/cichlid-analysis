@@ -89,6 +89,7 @@ if __name__ == '__main__':
     ## correlations ##
     # correlations for days across week for an individual - intra-individual variability
     mean_corr_per_fish = intra_individ_corr(rootdir, fish_tracks_bin, 'speed_mm')
+    mean_corr_per_fish_mean = mean_corr_per_fish.groupby('species').mean()
 
     features = ['speed_mm', 'rest']
     for feature in features:
@@ -102,9 +103,14 @@ if __name__ == '__main__':
 
     # save out corr_vals
     mean_corr_per_fish.to_csv(os.path.join(rootdir, 'mean_corr_per_fish.csv'), sep=',', index=False, encoding='utf-8')
+    mean_corr_per_fish_mean.to_csv(os.path.join(rootdir, 'intra-individual_corr_species_mean.csv'), sep=',',
+                                   index=True, encoding='utf-8')
     corr_vals_long.to_csv(os.path.join(rootdir, 'corr_vals_long_daily.csv'), sep=',', index=False, encoding='utf-8')
     corr_vals_long_weekly.to_csv(os.path.join(rootdir, 'corr_vals_long_weekly.csv'), sep=',', index=False,
                                  encoding='utf-8')
+    corr_vals_long_weekly_mean = corr_vals_long_weekly.groupby('species').mean()
+    corr_vals_long_weekly_mean.to_csv(os.path.join(rootdir, 'inter-individual_corr_weekly_species_mean.csv'), sep=',',
+                                      index=True, encoding='utf-8')
 
     # ### correlations for species and clusters ####
     run = False

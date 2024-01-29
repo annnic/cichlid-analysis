@@ -55,6 +55,61 @@ def cosinor_sp(fish_tracks_bin, epoch, test_tag):
     return
 
 
+def cosinor_fish(fish_tracks_bin, epoch, test_tag, bin_size_min=30):
+    all_species = fish_tracks_bin['species'].unique()
+    bins_per_h = 60 / bin_size_min
+
+    first_sp = True
+    for species_f in all_species:
+        # ### speed ###
+        spd = fish_tracks_bin[fish_tracks_bin.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # need to use time divisible by 24h otherwise it doesn't look at those timepoints?
+        filtered_spd = sp_spd[(epoch[0] < sp_spd.index) & (sp_spd.index < epoch[1])]
+
+        for fish, fish_name in enumerate(filtered_spd.columns):
+            ##### cosinorpy periodogram analysis ########
+            fish_spd = filtered_spd.loc[:, fish_name]
+            sp_spd_ts = np.arange(0, len(fish_spd))/bins_per_h
+
+            sp_spd_days_df = pd.DataFrame({'x': sp_spd_ts, 'y': fish_spd.reset_index(drop=True)})
+            sp_spd_days_df['test'] = fish_name
+
+            peaks = periodogram_df_an(sp_spd_days_df, folder=rootdir, prefix=fish_name, title=test_tag, save=False)
+
+            if peaks[0]==False:
+                peaks = [np.NaN, np.NaN]
+
+            if first_sp:
+                peaks_list = list(np.around(np.array(peaks), 2))
+                peaks_list.sort()
+                all_peaks = {fish_name: peaks_list}
+                if 24.0 in peaks_list:
+                    peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
+                    peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
+                else:
+                    peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
+                    peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
+                first_sp = False
+            else:
+                peaks_list = list(np.around(np.array(peaks), 2))
+                peaks_list.sort()
+                all_peaks[fish_name] = peaks_list
+
+                if 24.0 in peaks_list:
+                    peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
+                    peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
+                else:
+                    peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
+                    peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
+                peaks_24h_df = pd.concat([peaks_24h_df, peaks_24h_df_fish])
+
+    with open('periodogram_peaks_individuals_ordered.csv', 'w') as f:
+        w = csv.writer(f)
+        w.writerows(all_peaks.items())
+    return peaks_24h_df
+
 if __name__ == '__main__':
     rootdir = select_dir_path()
 
@@ -91,6 +146,8 @@ if __name__ == '__main__':
     tag2 = 'dark-dark'
     tag3 = 'six_days'
     tag4 = 'five_days'
+
+    # CHECK!!!! May take the one after to
     epochs = {tag1: [pd.to_datetime('1970-01-02 07:30:00'), pd.to_datetime('1970-01-05 8:00:00')],
               tag2: [pd.to_datetime('1970-01-05 07:30:00'), pd.to_datetime('1970-01-08 8:00:00')],
               tag3: [pd.to_datetime('1970-01-02 00:00:00'), pd.to_datetime('1970-01-08 00:30:00')],
@@ -102,8 +159,39 @@ if __name__ == '__main__':
     epoch = epochs[test_tag]
 
     #### cosinor analysis
-    cosinor_sp(fish_tracks_bin, epoch, test_tag)
+    # cosinor_sp(fish_tracks_bin, epoch, test_tag)
 
-    # cosinor_fish(fish_tracks_bin, epoch, test_tag)
+    peaks_24h_df = cosinor_fish(fish_tracks_bin, epoch, test_tag)
+    print('yay')
+    peaks_24h_df = peaks_24h_df.reset_index(drop=True)
+
+    import os
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+
+    plt.figure(figsize=(3, 6))
+
+    # total = peaks_24h_df.groupby('species')['24h_peak'].sum().reset_index()
+    total = peaks_24h_df.groupby('species').size().reset_index(name='total_counts')
+    circadian_peak = peaks_24h_df[peaks_24h_df.loc[:, '24h_peak'] == 1].groupby('species').size().reset_index(name='circ_counts')
+    circadian_peak_df = pd.merge(total, circadian_peak, how='left')
+
+    bar1 = sns.barplot(x="total_counts", y="species", data=circadian_peak_df, color='darkblue')
+    bar2 = sns.barplot(x="circ_counts", y="species", data=circadian_peak_df, estimator=sum, ci=None, color='lightblue')
+
+    top_bar = mpatches.Patch(color='darkblue', label='24h peak = No')
+    bottom_bar = mpatches.Patch(color='lightblue', label='24h peak = Yes')
+    plt.legend(handles=[top_bar, bottom_bar])
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        bar1.spines[axis].set_linewidth(0.5)
+    bar1.tick_params(width=0.5)
+    bar1.spines['top'].set_visible(False)
+    bar1.spines['right'].set_visible(False)
+
+    plt.savefig(os.path.join(rootdir, "individual_periodogram_24h_peaks.pdf"), dpi=350)
+    plt.close()
+
 
 
