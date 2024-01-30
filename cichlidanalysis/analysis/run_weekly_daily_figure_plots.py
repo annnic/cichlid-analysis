@@ -7,13 +7,14 @@ import pandas as pd
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_bin_als_files
-from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure
+from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure, weekly_individual_figure
 from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure
 
 if __name__ == '__main__':
     rootdir = select_dir_path()
 
-    fish_tracks_bin = load_bin_als_files(rootdir, suffix="*als_30m.csv")
+    bin_size_min = 30
+    fish_tracks_bin = load_bin_als_files(rootdir, suffix="*als_{}m.csv".format(bin_size_min))
 
     fish_IDs = fish_tracks_bin['FishID'].unique()
     # get timings
@@ -24,8 +25,11 @@ if __name__ == '__main__':
     # convert ts to datetime
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
 
+    # plot all individuals for each species
+    weekly_individual_figure(rootdir, 'speed_mm', fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
+
     # plot weekly plot
-    plot_speed_30m_mstd_figure(rootdir, fish_tracks_bin, change_times_d, ylim_max=85)
+    plot_speed_30m_mstd_figure(rootdir, fish_tracks_bin, change_times_d, ylim_max=60)
 
     # plot daily plot
     all_species = fish_tracks_bin['species'].unique()

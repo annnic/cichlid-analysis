@@ -14,6 +14,7 @@ from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
 from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.analysis.crepuscular_pattern import peak_borders
 
 
 def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):
@@ -451,7 +452,7 @@ def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d, ylim_ma
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}_ylim_[].pdf".format(species_f.replace(' ', '-'), ylim_max)), dpi=350)
         plt.close()
     return
 
@@ -621,5 +622,60 @@ def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times
         ax.spines['right'].set_visible(False)
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_condition_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
+        plt.close()
+    return
+
+
+def weekly_individual_figure(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=30):
+    """ Plots the weekly data of each fish for each species
+
+    :param rootdir:
+    :param feature:
+    :param fish_tracks_ds:
+    :param species:
+    :return:
+    """
+
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    num_day_bins, bins_per_h, _, _, _, _, _, _, border_bottom_week, border_top_week = peak_borders(bin_size_min, change_times_m)
+    dawn_s, dawn_e, dusk_s, dusk_e = (change_times_m[0]-60)/60, (change_times_m[0]+60)/60, (change_times_m[3]-60)/60, (change_times_m[3] + 60) / 60
+
+    date_form = DateFormatter("%H")
+
+    for species_name in fish_tracks_bin.species.unique():
+        fish_feature = fish_tracks_bin.loc[fish_tracks_bin.species == species_name, ['ts', 'FishID', feature]].pivot(
+            columns='FishID', values=feature, index='ts')
+
+        fig2, ax2 = plt.subplots(len(fish_feature.columns), 1, figsize=(2.5, 0.8*len(fish_feature.columns)))
+        ax2[-1].set_ylabel(feature)
+        for fish, fish_name in enumerate(fish_feature.columns):
+            for day in range(7):
+                ax2[fish].axvspan(dawn_s * bins_per_h + day * num_day_bins, dawn_e * bins_per_h + day * num_day_bins,
+                            color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_s * bins_per_h + day * num_day_bins, dusk_e * bins_per_h + day * num_day_bins,
+                                  color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(0 + day * num_day_bins, dawn_s * bins_per_h + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_e * bins_per_h + day * num_day_bins, num_day_bins + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
+
+            x = fish_feature.iloc[:, fish]
+            ax2[fish].plot(np.arange(len(fish_feature.index)), x, linewidth=0.5)
+            ax2[fish].title.set_text(fish_name)
+
+            ax2[fish].xaxis.set_major_locator(MultipleLocator(num_day_bins))
+            ax2[fish].xaxis.set_major_formatter(date_form)
+            ax2[fish].set_xlim(0, num_day_bins*6)
+            plt.xlabel("Time (h)")
+            plt.ylabel("Speed (mm/s)")
+            sns.despine(top=True, right=True)
+            for axis in ['top', 'bottom', 'left', 'right']:
+                ax2[fish].spines[axis].set_linewidth(0.5)
+            ax2[fish].tick_params(width=0.5)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_weekly_individuals_{}_bin_size_{}min.pdf".format(species_name, bin_size_min)), dpi=350)
         plt.close()
     return

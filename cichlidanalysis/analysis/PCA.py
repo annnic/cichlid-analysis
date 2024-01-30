@@ -285,3 +285,48 @@ if __name__ == '__main__':
     plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm,
                                  tribe_col, sp_to_tribes)
 
+    # ancestral reconstruction
+    file = 'reconstructed_pcs.csv'
+    recon_pc_loadings = pd.read_csv(os.path.join(rootdir, file), sep=',')
+
+    recon_pc_loadings.loc[0, 'pc1']
+
+    plt.plot(finalDf.pc1 * recon_pc_loadings.loc[0, 'pc1'], c='green', label='LCA')
+    plt.plot(finalDf.pc1 * np.float(loadings_sp.loc[loadings_sp.species == "Neonig", 'pc1']), c='blue', label='Neonig')
+    plt.plot(finalDf.pc1 * np.float(loadings_sp.loc[loadings_sp.species == "Neobue", 'pc1']), c='orange', label='Neobue')
+    plt.legend()
+    plt.savefig(os.path.join(rootdir, "PC1_LCA.png"), dpi=350)
+    plt.close()
+
+    #### reconstruct Last common ancestor
+    # weight each pc by variance explained
+    weighted_pcs = pca.explained_variance_ratio_ * finalDf.iloc[:, 0:-1]
+
+    # multiply by loading factor
+    weighted_pcs_LCA = weighted_pcs * recon_pc_loadings.iloc[0, 1:]
+
+    # sum
+    reconstructed_LCA_activity = weighted_pcs_LCA.sum(axis=1)
+
+    plt.plot(reconstructed_LCA_activity, c='green', label='LCA')
+    plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
+    plt.close()
+
+    #### reconstruct given species
+    species = 'Neobue'
+    # multiply by loading factor
+    loading_species = loadings_sp.loc[loadings_sp.species == species,
+                                      ['pc1', 'pc2', 'pc3', 'pc4', 'pc5', 'pc6', 'pc7', 'pc8', 'pc9', 'pc10']].squeeze()
+    weighted_pcs_species = weighted_pcs * loading_species
+
+    # sum
+    reconstructed_species_activity_trioto = weighted_pcs_species.sum(axis=1)
+
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(run_pca_df.loc[:, species])
+    ax2.plot(reconstructed_species_activity_trioto, c='k', label=species)
+    # plt.legend()
+    plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
+    plt.close()
+
+
