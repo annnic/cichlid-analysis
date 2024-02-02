@@ -138,7 +138,7 @@ def periodogram_an(X, Y, per_type='per', sampling_f='', logscale=False, name='',
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set_xticks([0, 12, 24, 48])
-        ax.set_ylim([0, T * 28])  # 14 for melatonin figure, 18 for supplement
+        # ax.set_ylim([0, T * 28])  # 14 for melatonin figure, 18 for supplement
         ax.set_xlim([0, 72])
 
         # plt.savefig(save_to + prefix + '.pdf')

@@ -309,6 +309,12 @@ if __name__ == '__main__':
     reconstructed_LCA_activity = weighted_pcs_LCA.sum(axis=1)
 
     plt.plot(reconstructed_LCA_activity, c='green', label='LCA')
+    span_max = reconstructed_LCA_activity.max() + 0.2
+    span_min = reconstructed_LCA_activity.min() - 0.2
+    plt.fill_between([0, 14], [span_min, span_min], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
+    plt.fill_between([14, 15], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+    plt.fill_between([18.5*2, 19*2], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+    plt.fill_between([19*2, 24*2], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
     plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
     plt.close()
 

@@ -2,6 +2,11 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import csv
+import os
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.analysis.run_binned_als import load_bin_als_files, setup_run_binned
@@ -71,39 +76,49 @@ def cosinor_fish(fish_tracks_bin, epoch, test_tag, bin_size_min=30):
         for fish, fish_name in enumerate(filtered_spd.columns):
             ##### cosinorpy periodogram analysis ########
             fish_spd = filtered_spd.loc[:, fish_name]
+
             sp_spd_ts = np.arange(0, len(fish_spd))/bins_per_h
 
             sp_spd_days_df = pd.DataFrame({'x': sp_spd_ts, 'y': fish_spd.reset_index(drop=True)})
             sp_spd_days_df['test'] = fish_name
 
-            peaks = periodogram_df_an(sp_spd_days_df, folder=rootdir, prefix=fish_name, title=test_tag, save=False)
-
-            if peaks[0]==False:
-                peaks = [np.NaN, np.NaN]
-
-            if first_sp:
-                peaks_list = list(np.around(np.array(peaks), 2))
-                peaks_list.sort()
-                all_peaks = {fish_name: peaks_list}
-                if 24.0 in peaks_list:
-                    peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
-                    peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
-                else:
-                    peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
-                    peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
-                first_sp = False
+            if np.isnan(fish_spd).max():
+                # if the fish has a nan period, it can't be used to calculate a periodogram, so exclude
+                print("{} has incomplete full days, not including".format(fish_name))
+                # plt.plot(np.isnan(fish_spd))
+                # plt.tight_layout()
+                # plt.savefig(os.path.join(rootdir, "{}_incomplete.pdf".format(fish_name)), dpi=350)
+                # plt.close()
+                # peaks = periodogram_df_an(sp_spd_days_df, folder=rootdir, prefix=fish_name, title=test_tag, save=True)
             else:
-                peaks_list = list(np.around(np.array(peaks), 2))
-                peaks_list.sort()
-                all_peaks[fish_name] = peaks_list
+                peaks = periodogram_df_an(sp_spd_days_df, folder=rootdir, prefix=fish_name, title=test_tag, save=False)
 
-                if 24.0 in peaks_list:
-                    peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
-                    peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
+                if peaks[0]==False:
+                    peaks = [np.NaN, np.NaN]
+
+                if first_sp:
+                    peaks_list = list(np.around(np.array(peaks), 2))
+                    peaks_list.sort()
+                    all_peaks = {fish_name: peaks_list}
+                    if 24.0 in peaks_list:
+                        peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
+                        peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
+                    else:
+                        peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
+                        peaks_24h_df = pd.DataFrame.from_dict(peak_24h)
+                    first_sp = False
                 else:
-                    peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
-                    peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
-                peaks_24h_df = pd.concat([peaks_24h_df, peaks_24h_df_fish])
+                    peaks_list = list(np.around(np.array(peaks), 2))
+                    peaks_list.sort()
+                    all_peaks[fish_name] = peaks_list
+
+                    if 24.0 in peaks_list:
+                        peak_24h = {'FishID': fish_name, '24h_peak': [1], 'species': species_f}
+                        peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
+                    else:
+                        peak_24h = {'FishID': fish_name, '24h_peak': [0], 'species': species_f}
+                        peaks_24h_df_fish = pd.DataFrame.from_dict(peak_24h)
+                    peaks_24h_df = pd.concat([peaks_24h_df, peaks_24h_df_fish])
 
     with open('periodogram_peaks_individuals_ordered.csv', 'w') as f:
         w = csv.writer(f)
@@ -112,6 +127,11 @@ def cosinor_fish(fish_tracks_bin, epoch, test_tag, bin_size_min=30):
 
 if __name__ == '__main__':
     rootdir = select_dir_path()
+
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
 
     # fish_tracks_bin = load_bin_als_files(rootdir, "*als_30m.csv")
     # fish_tracks_bin_1m = load_bin_als_files(rootdir, "*als_1m.csv")
@@ -150,31 +170,29 @@ if __name__ == '__main__':
     # CHECK!!!! May take the one after to
     epochs = {tag1: [pd.to_datetime('1970-01-02 07:30:00'), pd.to_datetime('1970-01-05 8:00:00')],
               tag2: [pd.to_datetime('1970-01-05 07:30:00'), pd.to_datetime('1970-01-08 8:00:00')],
-              tag3: [pd.to_datetime('1970-01-02 00:00:00'), pd.to_datetime('1970-01-08 00:30:00')],
-              tag4: [pd.to_datetime('1970-01-02 00:00:00'), pd.to_datetime('1970-01-07 00:30:00')]}
+              tag3: [pd.to_datetime('1970-01-01 23:30:00'), pd.to_datetime('1970-01-08 00:00:00')],
+              tag4: [pd.to_datetime('1970-01-02 23:30:00'), pd.to_datetime('1970-01-07 00:00:00')]}
 
     ##### CHANGE HERE!
     test_tag = tag3
-
     epoch = epochs[test_tag]
 
     #### cosinor analysis
     # cosinor_sp(fish_tracks_bin, epoch, test_tag)
 
+    # peak 5 days
+    peaks_24h_df_5days = cosinor_fish(fish_tracks_bin, epochs[tag4], tag4)
+    peaks_24h_df_5days = peaks_24h_df_5days.reset_index(drop=True)
+
     peaks_24h_df = cosinor_fish(fish_tracks_bin, epoch, test_tag)
-    print('yay')
     peaks_24h_df = peaks_24h_df.reset_index(drop=True)
 
-    import os
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
 
-    plt.figure(figsize=(3, 6))
+    plt.figure(figsize=(2, 6))
 
     # total = peaks_24h_df.groupby('species')['24h_peak'].sum().reset_index()
-    total = peaks_24h_df.groupby('species').size().reset_index(name='total_counts')
-    circadian_peak = peaks_24h_df[peaks_24h_df.loc[:, '24h_peak'] == 1].groupby('species').size().reset_index(name='circ_counts')
+    total = peaks_24h_df_5days.groupby('species').size().reset_index(name='total_counts')
+    circadian_peak = peaks_24h_df_5days[peaks_24h_df_5days.loc[:, '24h_peak'] == 1].groupby('species').size().reset_index(name='circ_counts')
     circadian_peak_df = pd.merge(total, circadian_peak, how='left')
 
     bar1 = sns.barplot(x="total_counts", y="species", data=circadian_peak_df, color='darkblue')
@@ -189,7 +207,9 @@ if __name__ == '__main__':
     bar1.tick_params(width=0.5)
     bar1.spines['top'].set_visible(False)
     bar1.spines['right'].set_visible(False)
+    bar1.set_xticks((0, 5, 10))
 
+    plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "individual_periodogram_24h_peaks.pdf"), dpi=350)
     plt.close()
 
