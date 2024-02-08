@@ -345,7 +345,7 @@ def plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, cres_peaks_i, feature, change_
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
-    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
 
     num_day_bins = 24*60/bin_size_min
     bins_per_h = 60/bin_size_min
@@ -374,7 +374,7 @@ def plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, cres_peaks_i, feature, change_
                                   y='species',
                                   kind="box",
                                   legend=False,
-                                  height=8,
+                                  height=12,
                                   aspect=0.5,
                                   data=cres_peaks_ii.loc[cres_peaks_ii.twilight == period],
                                   fliersize=0,

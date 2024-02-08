@@ -9,7 +9,7 @@ from scipy.stats import ttest_ind
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_bin_als_files, load_bin_als_file_condition
-from cichlidanalysis.utils.timings import load_timings_14_8
+from cichlidanalysis.utils.timings import load_timings_14_8, load_timings
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure_light_perturb, \
     plot_speed_30m_mstd_figure_conditions
 from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure_timed_perturb, daily_ave_spd_figure_timed_double
@@ -35,6 +35,10 @@ if __name__ == '__main__':
     # day
     measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 12:00:00'), pd.to_datetime('1970-01-05 16:00:00')],
               'epoch_2': [pd.to_datetime('1970-01-06 12:00:00'), pd.to_datetime('1970-01-06 16:00:00')]}
+
+    # # day 12-12h LD
+    # measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 10:00:00'), pd.to_datetime('1970-01-05 14:00:00')],
+    #           'epoch_2': [pd.to_datetime('1970-01-06 10:00:00'), pd.to_datetime('1970-01-06 14:00:00')]}
 
     # # #night
     # measure_epochs = {'epoch_1': [pd.to_datetime('1970-01-05 00:00:00'), pd.to_datetime('1970-01-05 04:00:00')],

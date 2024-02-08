@@ -17,7 +17,7 @@ from cichlidanalysis.io.io_feature_vector import load_diel_pattern
 from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_variance_explained, \
     plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, \
     plot_2D_pc_space_label_species, plot_2D_pc_space_colour, plot_pc, plot_2D_pc_space_orig, plot_norm_traces, \
-    plot_temporal_pcs
+    plot_temporal_pcs, plot_factor_loading_variance_matrix
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots, plot_all_spd_zscore_subplots
@@ -254,7 +254,9 @@ if __name__ == '__main__':
 
     # independent plots
     plot_3D_pc_space(rootdir, run_pca_df, finalDf, pca)
+    cathemeral_sp = plot_factor_loading_variance_matrix(rootdir, sp_feature_combined_daily, fish_tracks_bin, loadings, tribe_col, sp_to_tribes, top_pc=2)
     plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_pc=2)
+
     pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
     plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2'])
 

@@ -12,6 +12,7 @@ from matplotlib.dates import DateFormatter
 from datetime import timedelta
 import datetime as dt
 import cmasher as cmr
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from mpl_toolkits.mplot3d import Axes3D
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
@@ -243,6 +244,98 @@ def plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_p
     plt.savefig(os.path.join(rootdir, "factor_loading_matrix_clustered.pdf"), dpi=350)
     plt.close()
     return
+
+
+def plot_factor_loading_variance_matrix(rootdir, data_input_norm, fish_tracks_bin, loadings, tribe_col, sp_to_tribes, top_pc=3):
+    """ Plot the factor loading matrix for top X pcs
+
+    :param rootdir:
+    :param loadings:
+    :param top_pc:
+    :return:
+    """
+    # font sizes
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    sorted_loadings = loadings.sort_values(by='pc1')
+    data_minmax = sorted_loadings.pc1
+    if data_minmax.min() < 0:
+        end_val = np.max([abs(data_minmax.max()), abs(data_minmax.min())])
+        df_scaled = (data_minmax + end_val) / (end_val + end_val)
+    else:
+        print('need to check scaling')
+
+    first = True
+    for species_n, species_name in enumerate(loadings.index):
+        # get speeds for each individual for a given species
+        feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][['speed_mm', 'FishID', 'ts']]
+        sp_feature = feature_i.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # get time of day so that the same tod for each fish can be averaged
+        sp_feature['time_of_day'] = sp_feature.apply(lambda row: str(row.name)[11:16], axis=1)
+
+        # calculate ave and stdv
+        sp_spd_ave = sp_feature.groupby('time_of_day').mean()
+
+        if first:
+            max_min_spd_dif = sp_spd_ave.mean(axis=1).max() - sp_spd_ave.mean(axis=1).min()
+            sp_std = {'species': species_name, 'std_median': sp_spd_ave.std(axis=1).median(),
+                      'std_mean': sp_spd_ave.std(axis=1).mean(), 'max_min_spd_dif': max_min_spd_dif}
+            all_std_df = pd.DataFrame.from_dict(sp_std, orient='index').transpose()
+            first = False
+        else:
+            max_min_spd_dif = sp_spd_ave.mean(axis=1).max() - sp_spd_ave.mean(axis=1).min()
+            sp_std = {'species': species_name, 'std_median': sp_spd_ave.std(axis=1).median(),
+                      'std_mean': sp_spd_ave.std(axis=1).mean(), 'max_min_spd_dif': max_min_spd_dif}
+            sp_std_df = pd.DataFrame.from_dict(sp_std, orient='index').transpose()
+            all_std_df = pd.concat([all_std_df, sp_std_df])
+
+    all_std_df = all_std_df.set_index('species').astype(float)
+    loadings_std = pd.merge(loadings.iloc[:, :top_pc], all_std_df, left_index=True, right_index=True)
+
+    values = (all_std_df.std_mean * 2) / all_std_df.max_min_spd_dif
+    cathemeral_sp = values[values > 1]
+
+    # fig, ax = plt.subplots(figsize=(5, 15))
+    # sns.heatmap(loadings_std.iloc[:, :top_pc+1], annot=True, cmap="seismic", yticklabels=True)
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(rootdir, "factor_loading_matrix_std.png"))
+    # plt.close()
+
+    plt.figure(figsize=(15, 5))  # Width: 8 inches, Height: 6 inches
+    loadings_std['std_max-min_ratio'] = all_std_df.std_mean / all_std_df.max_min_spd_dif
+    plt.bar(all_std_df.index, loadings_std['std_max-min_ratio'])
+    plt.xticks(rotation=45)
+    plt.savefig(os.path.join(rootdir, "std_max-min_ratio.png"))
+    plt.close()
+
+    max_val, min_val = 0.2, 0
+    # Calculate the range of the data
+    data_range = max(loadings_std['std_max-min_ratio']) - min(loadings_std['std_max-min_ratio'])
+
+    # Normalize each data point
+    loadings_std['std_max-min_ratio'] = [(x - min(loadings_std['std_max-min_ratio'])) / data_range * (max_val - min_val) + min_val for x in loadings_std['std_max-min_ratio']]
+
+    values = all_std_df.std_mean / all_std_df.max_min_spd_dif
+
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    sp_tribes = pd.merge(pd.DataFrame(loadings.index).rename(columns={0: 'species'}), sp_to_tribes, on='species').drop_duplicates()
+    row_colors = sp_tribes.tribe.map(tribe_col)
+    row_colors = row_colors.set_axis(sp_tribes.species)
+    g = sns.clustermap(loadings_std.loc[:, ['pc1', 'pc2', 'std_max-min_ratio']], cmap=cmr.copper_s, figsize=(2, 6), col_cluster=False,
+                   yticklabels=True, method='ward', cbar_kws={'label': 'PC loading'}, row_colors=row_colors,
+                       colors_ratio=0.2, vmin=-0.2, vmax=0.2)
+    # annot=True,
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xmajorticklabels(), fontsize=SMALL_SIZE)
+    g.ax_heatmap.tick_params(width=0.5)
+    # plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "factor_loading_matrix_variance_clustered_stdev.pdf"), dpi=350)
+    plt.close()
+    return cathemeral_sp
 
 
 def pc_loadings_on_2D(rootdir, principalComponents, coeff, loadings, top_n):
