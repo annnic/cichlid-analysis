@@ -11,7 +11,8 @@ from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks_min, 
     crespuscular_daily_ave_fish, crepuscular_peaks_min_daily
 from cichlidanalysis.analysis.run_binned_als import setup_run_binned
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
-    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc, plot_cre_dawn_dusk_peak_loc_bin_size
+    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc, \
+    plot_cre_dawn_dusk_peak_loc_bin_size, plot_cre_dawn_dusk_peak_loc_bin_size_by_diel_guild
 from cichlidanalysis.io.als_files import load_bin_als_files
 from cichlidanalysis.utils.timings import load_timings_14_8
 
@@ -41,6 +42,10 @@ if __name__ == '__main__':
     plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, all_peaks_df, feature, change_times_m, name='average',
                                          peak_feature='peak_loc',
                                          bin_size_min=bin_size_min)
+    diel_guilds = ata_s = pd.read_csv(os.path.join(rootdir, 'diel_guilds.csv'), sep=',')
+    plot_cre_dawn_dusk_peak_loc_bin_size_by_diel_guild(rootdir, all_peaks_df, feature, change_times_m, 'average', diel_guilds,
+                                                       peak_feature='peak_loc', bin_size_min=30)
+
     # plot_cre_dawn_dusk_peak_loc(rootdir, all_peaks_df, feature, change_times_unit, name='average', peak_feature='peak_loc')
 
 
