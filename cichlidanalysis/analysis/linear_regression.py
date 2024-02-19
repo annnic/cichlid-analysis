@@ -23,9 +23,11 @@ def run_linear_reg(x, y):
     return model, r_sq
 
 
-def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
+def plt_lin_reg(rootdir, x, y, model, r_sq, label='', name_x=False, name_y=False, labels=False):
     """ Plot the scatter of two variables and add in the linear regression model, pearson's correlation and R2
 
+    :param name_y: name for y axis
+    :param name_x: name for x axis
     :param x: behavioural feature, pandas series
     :param y: ecological feature, pandas series
     :param model: run_linear_reg model
@@ -34,30 +36,39 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
     :return: saves plot
     """
     SMALL_SIZE = 6
-
     matplotlib.rcParams.update({'font.size': SMALL_SIZE})
 
-    fig = plt.figure(figsize=(2, 2))
+    fig = plt.figure(figsize=(1.5, 1.5))
     ax = sns.scatterplot(x, y, s=3)
     # x_intercept = (model.intercept_/model.coef_)[0]*-1
     # plt.plot([0, x_intercept], [model.intercept_, 0], color='k')
     y_pred = model.predict(np.reshape(x.to_numpy(), (-1, 1)))
     plt.plot(x, y_pred, color='k', linewidth=1)
-    ax.set(xlim=(min(x), max(x)), ylim=(min(y), max(y)))
+    ax.set(xlim=(min(x)-0.05, max(x)+0.05), ylim=(min(y)-0.05, max(y)+0.05))
 
     r = np.corrcoef(x, y)
     ax.text(0.85, 0.90, s="$R^2$={}".format(np.round(r_sq, 2)), va='top', ha='center', transform=ax.transAxes)
-    ax.text(0.85, 0.96, s="$r$={}".format(np.round(r[0, 1], 2)), va='top', ha='center', transform=ax.transAxes)
+    ax.text(0.85, 0.96, s="$R$={}".format(np.round(r[0, 1], 2)), va='top', ha='center', transform=ax.transAxes)
     fig.tight_layout()
     # ax.set_ylabel('Day - night activity')
     # ax.set_xlabel('Peak fraction')
+    if name_x:
+        ax.set_xlabel(name_x)
+    if name_y:
+        ax.set_ylabel(name_y)
+    if labels:
+        n = 0
+        for (i, j) in zip(x, y):
+            plt.text(i, j, x.index[n])
+            n = n+1
+
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     for axis in ['bottom', 'left']:
         ax.spines[axis].set_linewidth(0.5)
     ax.tick_params(width=0.5)
 
-    plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.pdf".format(x.name, y.name, label)), dpi=300)
+    plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.pdf".format(x.name, y.name, label)), dpi=350)
     plt.close()
 
     # # residuals plot

@@ -44,7 +44,7 @@ def setup_run_binned(rootdir, als_type='*als_30m.csv'):
 
     # add species six names, tribe and other meta data
     fish_tracks_bin_i = fish_tracks_bin_i.rename(columns={"species": "species_our_names"})
-    fish_tracks_bin_i = fish_tracks_bin_i.merge(sp_metrics, on='species_our_names')
+    fish_tracks_bin_i = fish_tracks_bin_i.merge(sp_metrics, on='species_our_names', how='left')
     fish_tracks_bin_i = add_day_number_fish_tracks(fish_tracks_bin_i)
     fish_tracks_bin_i = fish_tracks_bin_i.rename(columns={"six_letter_name_Ronco": "species"})
 
