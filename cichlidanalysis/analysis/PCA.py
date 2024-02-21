@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 from cichlidanalysis.analysis.processing import feature_daily
@@ -15,11 +15,16 @@ from cichlidanalysis.analysis.run_binned_als import setup_run_binned
 from cichlidanalysis.analysis.run_feature_vector import setup_feature_vector_data
 from cichlidanalysis.io.io_feature_vector import load_diel_pattern
 from cichlidanalysis.plotting.plot_pca import plot_loadings, plot_2D_pc_space, plot_variance_explained, \
-    plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, plot_2D_pc_space_label_species, plot_2D_pc_space_colour
+    plot_factor_loading_matrix, pc_loadings_on_2D, plot_reconstruct_pc, plot_3D_pc_space, \
+    plot_2D_pc_space_label_species, plot_2D_pc_space_colour, plot_pc, plot_2D_pc_space_orig, plot_norm_traces, \
+    plot_temporal_pcs, plot_factor_loading_variance_matrix
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.plotting.figure_1 import plot_all_spd_subplots, plot_all_spd_zscore_subplots
+from cichlidanalysis.utils.species_metrics import tribe_cols
 
-# insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+# inspired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+# and https://builtin.com/machine-learning/pca-in-python
 
 
 def reorganise_behav(fish_tracks_bin, feature, feature_id, row_id='FishID', col_id='time_of_day_dt'):
@@ -99,11 +104,12 @@ def fish_fv_pca_df(feature_v, ronco_data):
     return pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp
 
 
-def run_pca(rootdir, data_input, n_com=10):
+def run_pca(rootdir, data_input, norm='zscore', n_com=10):
     """ Takes a 2D pandas df, z-scores to standardise the data, runs PCA with n_com data
 
     :param rootdir: dir, here to save
     :param data_input: 2D matrix,
+    :param norm: minmax or zscore
     :param n_com:
     :return:
     """
@@ -113,8 +119,17 @@ def run_pca(rootdir, data_input, n_com=10):
         print('Some nulls in the data, cannot run')
         return
 
-    # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
-    x = StandardScaler().fit_transform(data_input.values)
+    if norm == 'minmax':
+        # scale data between 0 and 1
+        min_max_scaler = MinMaxScaler()
+        x = min_max_scaler.fit_transform(data_input.values)
+        data_input_norm = pd.DataFrame(x, columns=data_input.columns, index=data_input.index)
+    elif norm == 'zscore':
+        # z = (x - u) / s
+        # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
+        x = StandardScaler().fit_transform(data_input.values)
+        data_input_norm = pd.DataFrame(x, columns=data_input.columns, index=data_input.index)
+
     mu = np.mean(data_input, axis=0)
 
     # run PCA
@@ -127,15 +142,16 @@ def run_pca(rootdir, data_input, n_com=10):
     principalDf = pd.DataFrame(data=principalComponents, columns=labels)
     finalDf = pd.concat([principalDf, data_input.index.to_series().reset_index(drop=True)], axis=1)
 
-    # reconstructing the fish series
-    # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
-    Xhat = np.dot(pca.transform(data_input)[:, :n_com], pca.components_[:n_com, :])
-    Xhat += mu
-    reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(reconstructed)
-    plt.savefig(os.path.join(rootdir, "reconstructed.png"), dpi=1000)
-    plt.close()
+    if norm == 'zscore':
+        # reconstructing the fish series
+        # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
+        Xhat = np.dot(pca.transform(data_input)[:, :n_com], pca.components_[:n_com, :])
+        Xhat += mu
+        reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
+        f, ax = plt.subplots(figsize=(10, 5))
+        plt.plot(reconstructed)
+        plt.savefig(os.path.join(rootdir, "reconstructed.png"), dpi=1000)
+        plt.close()
 
     # plot reconstruction of pc 'n'
     plot_reconstruct_pc(rootdir, data_input, pca, mu, 1)
@@ -148,7 +164,7 @@ def run_pca(rootdir, data_input, n_com=10):
     # plt.savefig(os.path.join(rootdir, "reconstructed_Astbur.png"), dpi=1000)
     # plt.close()
 
-    return pca, labels, loadings, principalDf, finalDf, principalComponents
+    return pca, labels, loadings, finalDf, principalComponents, data_input_norm
 
 
 def replace_cat_with_nums(df, col_names):
@@ -183,6 +199,8 @@ if __name__ == '__main__':
     fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, species_sixes = setup_run_binned(rootdir)
     feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
 
+    sp_to_tribes = sp_metrics.loc[:, ['tribe', 'six_letter_name_Ronco']].rename(columns={"six_letter_name_Ronco": "species"})
+
     # get timings
     fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
     day_ns, day_s, change_times_d, change_times_m, change_times_datetime, change_times_unit \
@@ -194,43 +212,129 @@ if __name__ == '__main__':
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_rest = feature_daily(averages_rest)
 
+    for species_n, species_name in enumerate(averages_spd.drop(['time_of_day'], axis=1).columns):
+        # get speeds for each individual for a given species
+        feature = 'speed_mm'
+        feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][[feature, 'FishID', 'ts']]
+        sp_feature = feature_i.pivot(columns='FishID', values=feature, index='ts')
+
+        sp_feature_daily = feature_daily(sp_feature)
+        if species_n == 0:
+            sp_feature_combined_weekly = sp_feature
+            sp_feature_combined_daily = sp_feature_daily
+        else:
+            frames = [sp_feature_combined_weekly, sp_feature]
+            sp_feature_combined = pd.concat(frames, axis=1)
+
+            frames = [sp_feature_combined_daily, sp_feature_daily]
+            sp_feature_combined_daily = pd.concat(frames, axis=1)
+
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
-    pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
-    pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
+    ########### PCA matrix setup
+    # pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
+    # pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
-    run_pca_df = aves_ave_spd.transpose()
-    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df)
+    ########### other preprocessed/setups
+    # # log transform
+    # aves_ave_spd_log = np.log(aves_ave_spd)
+    # aves_ave_spd.transpose() = ts as feature
+    # aves_ave_spd = species as features
+    # sp_feature_combined_daily = individual fish as features
 
-    # finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
-    # finalDf['species'] = run_pca_df.index.to_list()
+    # aves_ave_spd with zscore is the input used for the paper
+    run_pca_df = aves_ave_spd
+    norm_method = 'zscore'
+    pca, labels, loadings, finalDf, principalComponents, data_input_norm = run_pca(rootdir, run_pca_df, norm=norm_method)
 
-    # just species aves_ave_spd_means
-    finalDf = finalDf.rename(columns={finalDf.columns[-1]: 'species'})
+    # plot normalised data input
+    plot_norm_traces(rootdir, data_input_norm, norm_method)
+    data_input_norm.reset_index().to_csv(os.path.join(rootdir, 'pca_input_zscore.csv'), sep=',', index=False,
+                                         encoding='utf-8')
+
+    # independent plots
+    plot_3D_pc_space(rootdir, run_pca_df, finalDf, pca)
+    cathemeral_sp = plot_factor_loading_variance_matrix(rootdir, sp_feature_combined_daily, fish_tracks_bin, loadings, tribe_col, sp_to_tribes, top_pc=2)
+    plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_pc=2)
+
+    pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
+    plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2'])
+
+    # figure 1
+    plot_variance_explained(rootdir, pca)
+    plot_2D_pc_space_orig(rootdir, run_pca_df, finalDf)
+    plot_temporal_pcs(rootdir, finalDf, change_times_datetime)
+
+    # just species.t aves_ave_spd_means, where species are the features
     averages_t = averages.transpose()
     averages_t = averages_t.reset_index().rename(columns={'index': 'species'})
-    finalDf = finalDf.merge(averages_t[['species', 'day_night_dif']], on='species', how='left')
-    finalDf = finalDf.merge(averages_t[['species', 'peak']], on='species', how='left')
+    loadings_sp = loadings.reset_index().rename(columns={'index': 'species'})
+    loadings_sp = loadings_sp.merge(averages_t[['species', 'day_night_dif', 'peak']], on='species', how='left')
 
-    plot_2D_pc_space_label_species(rootdir, finalDf, target=finalDf['species'])
-    # plot_2D_pc_space(rootdir, finalDf, target='target')
-    plot_2D_pc_space_colour(rootdir, finalDf, target='day_night_dif')
-    plot_2D_pc_space_colour(rootdir, finalDf, target='peak')
+    # save data:
+    loadings_sp.to_csv(os.path.join(rootdir, 'pca_loadings.csv'), sep=',', index=False, encoding='utf-8')
 
-    finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
+    # pc1 vs day_night_dif
+    model, r_sq = run_linear_reg(loadings_sp.day_night_dif.astype(float), loadings_sp.pc1)
+    plt_lin_reg(rootdir, loadings_sp.day_night_dif.astype(float), loadings_sp.pc1, model, r_sq)
 
-    plot_variance_explained(rootdir, principalDf, pca)
-    plot_2D_pc_space(rootdir, finalDf, target='species')
-    plot_3D_pc_space(rootdir, finalDf)
-    plot_factor_loading_matrix(rootdir, loadings, top_pc=3)
-    pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
+    # pc2 vs peak
+    model, r_sq = run_linear_reg(loadings_sp.peak.astype(float), loadings_sp.pc2)
+    plt_lin_reg(rootdir, loadings_sp.peak.astype(float), loadings_sp.pc2, model, r_sq)
 
-    loadings = loadings.reset_index().rename(columns={'index': 'features'})
-    pca_df = loadings.merge(diel_patterns, on='features')
-    model, r_sq = run_linear_reg(pca_df.pc1, pca_df.day_night_dif)
-    plt_lin_reg(rootdir, pca_df.pc1, pca_df.day_night_dif, model, r_sq)
+    plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp)
 
-    model, r_sq = run_linear_reg(pca_df.pc2, pca_df.peak)
-    plt_lin_reg(rootdir, pca_df.pc2, pca_df.peak, model, r_sq)
+    plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm,
+                                 tribe_col, sp_to_tribes)
+
+    # ancestral reconstruction
+    file = 'reconstructed_pcs.csv'
+    recon_pc_loadings = pd.read_csv(os.path.join(rootdir, file), sep=',')
+
+    recon_pc_loadings.loc[0, 'pc1']
+
+    plt.plot(finalDf.pc1 * recon_pc_loadings.loc[0, 'pc1'], c='green', label='LCA')
+    plt.plot(finalDf.pc1 * np.float(loadings_sp.loc[loadings_sp.species == "Neonig", 'pc1']), c='blue', label='Neonig')
+    plt.plot(finalDf.pc1 * np.float(loadings_sp.loc[loadings_sp.species == "Neobue", 'pc1']), c='orange', label='Neobue')
+    plt.legend()
+    plt.savefig(os.path.join(rootdir, "PC1_LCA.png"), dpi=350)
+    plt.close()
+
+    #### reconstruct Last common ancestor
+    # weight each pc by variance explained
+    weighted_pcs = pca.explained_variance_ratio_ * finalDf.iloc[:, 0:-1]
+
+    # multiply by loading factor
+    weighted_pcs_LCA = weighted_pcs * recon_pc_loadings.iloc[0, 1:]
+
+    # sum
+    reconstructed_LCA_activity = weighted_pcs_LCA.sum(axis=1)
+
+    plt.plot(reconstructed_LCA_activity, c='green', label='LCA')
+    span_max = reconstructed_LCA_activity.max() + 0.2
+    span_min = reconstructed_LCA_activity.min() - 0.2
+    plt.fill_between([0, 14], [span_min, span_min], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
+    plt.fill_between([14, 15], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+    plt.fill_between([18.5*2, 19*2], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+    plt.fill_between([19*2, 24*2], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
+    plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
+    plt.close()
+
+    #### reconstruct given species
+    species = 'Neobue'
+    # multiply by loading factor
+    loading_species = loadings_sp.loc[loadings_sp.species == species,
+                                      ['pc1', 'pc2', 'pc3', 'pc4', 'pc5', 'pc6', 'pc7', 'pc8', 'pc9', 'pc10']].squeeze()
+    weighted_pcs_species = weighted_pcs * loading_species
+
+    # sum
+    reconstructed_species_activity_trioto = weighted_pcs_species.sum(axis=1)
+
+    f, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(run_pca_df.loc[:, species])
+    ax2.plot(reconstructed_species_activity_trioto, c='k', label=species)
+    # plt.legend()
+    plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
+    plt.close()
 
 

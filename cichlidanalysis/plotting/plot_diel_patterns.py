@@ -249,6 +249,56 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
     return
 
 
+def plot_cre_dawn_dusk_loc_strip_box(rootdir, cres_peaks_i, feature, peak_feature='peak_loc', bin_size_min=30):
+    """ Plot the crepuscular data as a strip and box plot
+
+    :param rootdir:
+    :param all_feature_combined:
+    :param feature:
+    :return:
+    """
+
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    twilights = ['dawn', 'dusk']
+    for period in twilights:
+        # find how many times there's a peak location and only include species which have at least 50% of indiviudals
+        # which have a peak
+        cres_peaks_subset = cres_peaks_i.loc[cres_peaks_i.twilight == period]
+        df_counts = cres_peaks_subset.groupby('species').count()
+        peak_fraction = df_counts.peak_loc / df_counts.FishID
+        peak_fraction = peak_fraction.to_frame(name='peak_fraction')
+        # peak_fraction.index.name = 'species'
+        # peak_fraction = peak_fraction.reset_index()
+        sorted_index = peak_fraction.sort_values(by='peak_fraction').index
+
+        f, ax = plt.subplots(figsize=(5, 1.5))
+        grped_bplot = sns.barplot(x=peak_fraction.index,
+                                  y='peak_fraction',
+                                  data=peak_fraction,
+                                  order=sorted_index,
+                                  palette=colors_from_values(peak_fraction.reindex(sorted_index).loc[:, 'peak_fraction'], "flare"))
+
+        grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+        grped_bplot.set(ylabel='Peak fraction', xlabel='Species')
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "crepuscular_{0}min_box_sort_daily_ave_{1}_{2}_{3}.pdf".format(bin_size_min,
+                                                                                                         period,
+                                                                                                         feature,
+                                                                                                         peak_feature)),
+                    dpi=350)
+        plt.close()
+    return
+
+
 def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_unit, name, peak_feature='peak_loc'):
     """ Plot the crepuscular peak location data as a strip and box plot with the coloured background
 
@@ -257,6 +307,11 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
     :param feature:
     :return:
     """
+
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
 
     dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
@@ -279,7 +334,7 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
                                   y='species',
                                   kind="box",
                                   legend=False,
-                                  height=10,
+                                  height=8,
                                   aspect=0.5,
                                   data=cres_peaks_ii.loc[cres_peaks_ii.twilight == period],
                                   fliersize=0,
@@ -326,6 +381,201 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
         plt.close()
     return
 
+
+def plot_cre_dawn_dusk_peak_loc_bin_size(rootdir, cres_peaks_i, feature, change_times_m, name, peak_feature='peak_loc',
+                                bin_size_min=30):
+    """ Plot the crepuscular peak location data as a strip and box plot with the coloured background
+
+    :param rootdir:
+    :param all_feature_combined:
+    :param feature:
+    :return:
+    """
+
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    num_day_bins = 24*60/bin_size_min
+    bins_per_h = 60/bin_size_min
+    dawn_s, dawn_e, dusk_s, dusk_e = (change_times_m[0]-60)/60, (change_times_m[0]+60)/60, (change_times_m[3]-60)/60, \
+                                     (change_times_m[3] + 60) / 60
+
+
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
+    sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
+
+    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
+    sorted_index_dusk = dusk_index.drop(dusk_index[dusk_index.twilight == 'dawn'].index).set_index('species').sort_values(by=peak_feature).index
+
+    # As the bin is plotted at it's starting point, shift all points so that they are plotted in the middle of the bin
+    # (+0.5) e.g. bin 0 is from 00:00 to 00:30 but is plotted at 00:00 not at 00:15
+    cres_peaks_ii = copy.copy(cres_peaks_i)
+    cres_peaks_ii.loc[:, 'peak_loc'] = (cres_peaks_i.loc[:, 'peak_loc']+0.5)/bins_per_h
+    twilights = ['dawn', 'dusk']
+
+    for period in twilights:
+        if period == 'dawn':
+            sorted_index = sorted_index_dawn
+        elif period == 'dusk':
+            sorted_index = sorted_index_dusk
+        grped_bplot = sns.catplot(x=peak_feature,
+                                  y='species',
+                                  kind="box",
+                                  legend=False,
+                                  height=12,
+                                  aspect=0.5,
+                                  data=cres_peaks_ii.loc[cres_peaks_ii.twilight == period],
+                                  fliersize=0,
+                                  boxprops=dict(alpha=1),
+                                  order=sorted_index,
+                                  color='lightcoral',
+                                  saturation=0.8,
+                                  zorder=30)
+
+        # plot the lighting background
+        if period == 'dawn':
+            ax = plt.axvline(dawn_s, ls='--', color='k')
+            ax = plt.axvline(dawn_e, ls='--', color='k')
+            plt.axvspan(0, change_times_m[0]/60, color='lightblue', alpha=0.5, linewidth=0, zorder=-1)
+            plt.axvspan(change_times_m[0]/60, change_times_m[1]/60, color='wheat', alpha=0.5, linewidth=0, zorder=0)
+            plt.xlim(dawn_s-0.25, dawn_e+0.25)
+            plt.xlabel("Time (h)")
+
+        if period == 'dusk':
+            ax = plt.axvline(dusk_s, ls='--', color='k')
+            ax = plt.axvline(dusk_e, ls='--', color='k')
+            plt.axvspan(change_times_m[2]/60, change_times_m[3]/60, color='wheat', alpha=0.5, linewidth=0, zorder=-1)
+            plt.axvspan(change_times_m[3]/60, 24 * bins_per_h, color='lightblue', alpha=0.5, linewidth=0, zorder=0)
+            plt.xlim(dusk_s-0.25, dusk_e+0.25)
+            plt.xlabel("Time (h)")
+
+        sns.stripplot(x=peak_feature,
+                      y='species',
+                      data=cres_peaks_ii.loc[cres_peaks_ii.twilight == period],
+                      order=sorted_index,
+                      color='black',
+                      size=3,
+                      jitter=0.25).set(title=period)
+        grped_bplot.set(xlabel='Peak location', ylabel='Species')
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}_{4}.png".format(period,
+                                                                                                      dt.date.today(),
+                                                                                                      feature,
+                                                                                                      peak_feature,
+                                                                                                      name)))
+        plt.close()
+    return
+
+
+def plot_cre_dawn_dusk_peak_loc_bin_size_by_diel_guild(rootdir, cres_peaks_i, feature, change_times_m, name, diel_guilds,
+                                                       peak_feature='peak_loc', bin_size_min=30):
+    """ Plot the crepuscular peak location data as a strip and box plot with the coloured background
+
+    :param rootdir:
+    :param all_feature_combined:
+    :param feature:
+    :return:
+    """
+
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    num_day_bins = 24*60/bin_size_min
+    bins_per_h = 60/bin_size_min
+    dawn_s, dawn_e, dusk_s, dusk_e = (change_times_m[0]-60)/60, (change_times_m[0]+60)/60, (change_times_m[3]-60)/60, \
+                                     (change_times_m[3] + 60) / 60
+
+    # As the bin is plotted at it's starting point, shift all points so that they are plotted in the middle of the bin
+    # (+0.5) e.g. bin 0 is from 00:00 to 00:30 but is plotted at 00:00 not at 00:15
+    cres_peaks_ii = copy.copy(cres_peaks_i)
+    cres_peaks_ii.loc[:, 'peak_loc'] = (cres_peaks_i.loc[:, 'peak_loc']+0.5)/bins_per_h
+    cres_peaks_ii = cres_peaks_ii.merge(diel_guilds, on='species', how='left')
+    twilights = ['dawn', 'dusk']
+
+    custom_palette = {'Nocturnal': '#40A9BF', 'Cathemeral': '#737F8C', 'Diurnal': '#CED926', 'Crepuscular': '#26D97A'}
+
+    for period in twilights:
+        # find how many times there's a peak location and only include species which have at least 50% of indiviudals
+        # which have a peak
+        cres_peaks_subset = cres_peaks_ii.loc[cres_peaks_ii.twilight == period]
+        df_counts = cres_peaks_subset.groupby('species').count()
+
+        for sp in list(df_counts.loc[df_counts.peak_loc/df_counts.FishID < 0.5].index):
+            cres_peaks_subset = cres_peaks_subset[cres_peaks_subset['species'] != sp]
+
+        if period == 'dawn':
+            dawn_index = cres_peaks_subset.groupby(by=['species', 'twilight']).mean().reset_index()
+            sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index(
+                'species').sort_values(by=peak_feature).index
+
+            sorted_index = sorted_index_dawn
+
+        elif period == 'dusk':
+            dusk_index = cres_peaks_subset.groupby(by=['species', 'twilight']).mean().reset_index()
+            sorted_index_dusk = dusk_index.drop(dusk_index[dusk_index.twilight == 'dawn'].index).set_index(
+                'species').sort_values(by=peak_feature).index
+
+            sorted_index = sorted_index_dusk
+
+        grped_bplot = sns.catplot(x=peak_feature,
+                                  y='species',
+                                  kind="box",
+                                  legend=False,
+                                  height=5,
+                                  aspect=0.3,
+                                  data=cres_peaks_subset,
+                                  fliersize=0,
+                                  boxprops=dict(alpha=1),
+                                  order=sorted_index,
+                                  saturation=0.8,
+                                  zorder=30,
+                                  hue='diel_guild',
+                                  dodge=False,
+                                  palette=custom_palette,
+                                  linewidth=0.5)
+
+        # plot the lighting background
+        if period == 'dawn':
+            ax = plt.axvline(dawn_s, ls='--', color='k', linewidth=0.5)
+            ax = plt.axvline(dawn_e, ls='--', color='k', linewidth=0.5)
+            plt.axvspan(0, change_times_m[0]/60, color='lightblue', alpha=0.5, linewidth=0, zorder=-1)
+            plt.axvspan(change_times_m[0]/60, change_times_m[1]/60, color='wheat', alpha=0.5, linewidth=0, zorder=0)
+            plt.xlim(dawn_s-0.25, dawn_e+0.25)
+            plt.xlabel("Time (h)")
+
+        if period == 'dusk':
+            ax = plt.axvline(dusk_s, ls='--', color='k', linewidth=0.5)
+            ax = plt.axvline(dusk_e, ls='--', color='k', linewidth=0.5)
+            plt.axvspan(change_times_m[2]/60, change_times_m[3]/60, color='wheat', alpha=0.5, linewidth=0, zorder=-1)
+            plt.axvspan(change_times_m[3]/60, 24 * bins_per_h, color='lightblue', alpha=0.5, linewidth=0, zorder=0)
+            plt.xlim(dusk_s-0.25, dusk_e+0.25)
+            plt.xlabel("Time (h)")
+
+        sns.stripplot(x=peak_feature,
+                      y='species',
+                      data=cres_peaks_subset,
+                      order=sorted_index,
+                      hue='diel_guild',
+                      palette=custom_palette,
+                      size=2,
+                      jitter=0.25).set(title=period)
+        grped_bplot.set(xlabel='Peak location', ylabel='Species')
+        for axis in ['top', 'bottom', 'left', 'right']:
+            grped_bplot.ax.spines[axis].set_linewidth(0.5)
+        grped_bplot.ax.tick_params(width=0.5)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "crepuscular_{0}min_box_sort_guild_{1}_{2}_{3}_{4}_{5}.pdf".format(bin_size_min,
+                                                                                                      period,
+                                                                                                      dt.date.today(),
+                                                                                                      feature,
+                                                                                                      peak_feature,
+                                                                                                      name)), dpi=350)
+        plt.close()
+    return
 
 def plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_i, feature, peak_feature='peak'):
     """ Plot the crepuscular data as a stacked bar plot

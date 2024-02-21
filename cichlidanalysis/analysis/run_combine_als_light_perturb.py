@@ -16,7 +16,7 @@ from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.io.io_feature_vector import create_fv1, create_fv2
-from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.utils.timings import load_timings_14_8
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
 from cichlidanalysis.analysis.bouts import find_bouts_input
 from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # get timings
     fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s, \
     change_times_d, change_times_m, change_times_datetime, change_times_unit = \
-        load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
+        load_timings_14_8(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
 
     # add new column with Day or Night
     t2 = time.time()
@@ -118,13 +118,13 @@ if __name__ == '__main__':
     fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
     print("Finished adding 30min species and daynight")
 
-    # define bouts for movement
-    fish_bouts_move = find_bouts_input(fish_tracks, change_times_m, measure="movement")
-    print("Defined bouts for movement")
-
-    # define bouts for rest
-    fish_bouts_rest = find_bouts_input(fish_tracks, change_times_m, measure="rest")
-    print("Defined bouts for rest")
+    # # define bouts for movement
+    # fish_bouts_move = find_bouts_input(fish_tracks, change_times_m, measure="movement")
+    # print("Defined bouts for movement")
+    #
+    # # define bouts for rest
+    # fish_bouts_rest = find_bouts_input(fish_tracks, change_times_m, measure="rest")
+    # print("Defined bouts for rest")
 
     # ### plotting ### #
     # ### SPEED ###
@@ -146,26 +146,26 @@ if __name__ == '__main__':
     # movement (30m bins) for each species (mean  +- std)
     plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, MOVE_THRESH)
     plot_movement_30m_sex(rootdir, fish_tracks_30m, change_times_d, MOVE_THRESH)
-    plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
+    # plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
     print("Finished movement plots")
 
-    # ### POSITION ###
-    # ##### x,y position (binned day/night, and average day/night) #####
-    plot_position_maps(meta, fish_tracks, rootdir)
+    # # ### POSITION ###
+    # # ##### x,y position (binned day/night, and average day/night) #####
+    # plot_position_maps(meta, fish_tracks, rootdir)
+    #
+    # # speed vs Y position, for each fish, for combine fish of species, separated between day and night
+    # spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
+    # print("Finished position plots")
 
-    # speed vs Y position, for each fish, for combine fish of species, separated between day and night
-    spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
-    print("Finished position plots")
-
-    # ### REST ###
-    # rest (30m bins) for each fish (individual lines)
-    plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
-
-    # rest (30m bins) for each species (mean  +- std)
-    plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
-    plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
-    plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
-    print("Finished rest plots")
+    # # ### REST ###
+    # # rest (30m bins) for each fish (individual lines)
+    # plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
+    #
+    # # rest (30m bins) for each species (mean  +- std)
+    # plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
+    # plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
+    # plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
+    # print("Finished rest plots")
 
     # get daily average
     plot_daily(fish_tracks_30m, change_times_unit, rootdir)
@@ -177,5 +177,5 @@ if __name__ == '__main__':
 
     # feature vectors: for each fish readout vector of feature values
     create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
-    create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
+    # create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
 

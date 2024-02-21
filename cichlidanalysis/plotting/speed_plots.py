@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
+import matplotlib
 import seaborn as sns
 import matplotlib.cm as cm
 import pandas as pd
@@ -13,6 +14,7 @@ from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
 from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.analysis.crepuscular_pattern import peak_borders
 
 
 def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):
@@ -400,4 +402,280 @@ def plot_ridge_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, y
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
     plt.close('all')
+    return
+
+
+def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d, ylim_max=60):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+    date_form = DateFormatter("%H")
+
+    for species_f in all_species:
+        # get speeds for each individual for a given species
+        spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # calculate ave and stdv
+        average = sp_spd.mean(axis=1)
+        stdv = sp_spd.std(axis=1)
+
+        plt.figure(figsize=(2, 1))
+        ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average, linewidth=0.5)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, ylim_max])
+        plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+        plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+        plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+        # Decrease the offset for tick labels on all axes
+        ax.xaxis.labelpad = 0.5
+        ax.yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        ax.tick_params(axis='x', pad=0.5, length=2)
+        ax.tick_params(axis='y', pad=0.5, length=2)
+
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}_ylim_[].pdf".format(species_f.replace(' ', '-'), ylim_max)), dpi=350)
+        plt.close()
+    return
+
+
+def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d, normal_days=4):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+    date_form = DateFormatter("%H")
+
+    for species_f in all_species:
+        # get speeds for each individual for a given species
+        spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # calculate ave and stdv
+        average = sp_spd.mean(axis=1)
+        stdv = sp_spd.std(axis=1)
+
+        plt.figure(figsize=(2, 1))
+        ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average, linewidth=0.5)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        tv_internal = fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[1]].ts
+
+        td = tv_internal.iloc[-1] - tv_internal.iloc[0]
+        days = td.round('d')
+        if td > days:
+            days = days + '1d'
+        days_to_plot = days.days + 1
+
+        # for the normal days, plot the different light conditions
+        for day_n in range(normal_days):
+            ax.axvspan(0 + day_n, change_times_d[0] + day_n, color='lightblue', alpha=0.5, linewidth=0)
+            ax.axvspan(change_times_d[0] + day_n, change_times_d[1] + day_n, color='wheat', alpha=0.5,
+                       linewidth=0)
+            ax.axvspan(change_times_d[2] + day_n, change_times_d[3] + day_n, color='wheat', alpha=0.5,
+                       linewidth=0)
+            ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
+
+        # for the rest of the days, plot Dark:Dark
+        for day_n in np.arange(normal_days, days_to_plot):
+            ax.axvspan(0 + day_n, change_times_d[0] + day_n, color='lightblue', alpha=0.5, linewidth=0)
+            ax.axvspan(change_times_d[0] + day_n, change_times_d[3] + day_n, color='cadetblue', alpha=0.3,
+                       linewidth=0)
+            ax.axvspan(change_times_d[3] + day_n, day_n + 1, color='lightblue', alpha=0.5, linewidth=0)
+        # ax.axvspan(day_n + 1, days_to_plot, color='lightblue', alpha=0.5, linewidth=0)
+
+
+        ax.set_ylim([0, 100])
+        td = tv_internal.iloc[-1] - tv_internal.iloc[0]
+        days = td.round('d')
+        if td > days:
+            days = days + '1d'
+        days_to_plot = days.days + 1
+        ax.set_xlim([1, days_to_plot - 16 / 24])
+        plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+        plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+        plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+        # Decrease the offset for tick labels on all axes
+        ax.xaxis.labelpad = 0.5
+        ax.yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        ax.tick_params(axis='x', pad=0.5, length=2)
+        ax.tick_params(axis='y', pad=0.5, length=2)
+
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_light_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
+        plt.close()
+    return
+
+
+def plot_speed_30m_mstd_figure_conditions(rootdir, fish_tracks_30m, change_times_d, tag1, tag2, measure_epochs):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+    date_form = DateFormatter("%H")
+
+    for species_f in all_species:
+        # get speeds for each individual for a given species
+        spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts', 'condition']]
+        spd_tag1 = spd.loc[spd.condition == tag1]
+        spd_tag2 = spd.loc[spd.condition == tag2]
+        sp_spd_tag1 = spd_tag1.pivot(columns='FishID', values='speed_mm', index='ts')
+        sp_spd_tag2 = spd_tag2.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # calculate ave and stdv
+        average_tag1 = sp_spd_tag1.mean(axis=1)
+        stdv_tag1 = sp_spd_tag1.std(axis=1)
+
+        average_tag2 = sp_spd_tag2.mean(axis=1)
+        stdv_tag2 = sp_spd_tag2.std(axis=1)
+
+        plt.figure(figsize=(2, 1))
+        ax = sns.lineplot(x=average_tag1.index, y=average_tag1 + stdv_tag1, linewidth=0.5, color='m', alpha=0.2)
+        sns.lineplot(x=average_tag1.index, y=average_tag1 - stdv_tag1, linewidth=0.5, color='m', alpha=0.2)
+
+        ax = sns.lineplot(x=average_tag2.index, y=average_tag2 + stdv_tag2, linewidth=0.5, color='k', alpha=0.2)
+        sns.lineplot(x=average_tag2.index, y=average_tag2 - stdv_tag2, linewidth=0.5, color='k', alpha=0.2)
+
+        sns.lineplot(x=average_tag1.index, y=average_tag1, linewidth=0.5, color='m')
+        sns.lineplot(x=average_tag2.index, y=average_tag2, linewidth=0.5, color='k')
+
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        tv_internal = fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[1]].ts
+        fill_plot_ts(ax, change_times_d, tv_internal)
+
+        # add day injection timing on 4th and 5th day
+        ax.axvspan(9/24 + 4, 10/24 + 4, color='darkgrey', alpha=1, linewidth=0, zorder=10)
+        ax.axvspan(9/24 + 5, 10/24 + 5, color='darkgrey', alpha=1, linewidth=0, zorder=11)
+
+        # # add night injection timing on 4th and 5th day
+        # ax.axvspan(23/24 + 3, 24/24 + 3, color='darkgrey', alpha=1, linewidth=0, zorder=10)
+        # ax.axvspan(23/24 + 4, 24/24 + 4, color='darkgrey', alpha=1, linewidth=0, zorder=11)
+
+        # add quantification timing on 4th and 5th day
+        for epoch in measure_epochs:
+            ax.axvspan(measure_epochs[epoch][0].hour/24 + measure_epochs[epoch][0].day -1,
+                    measure_epochs[epoch][1].hour/24 + measure_epochs[epoch][0].day -1,
+                    color='seagreen', alpha=0.5, linewidth=0, zorder=10)
+
+        ax.set_ylim([0, 100])
+        td = tv_internal.iloc[-1] - tv_internal.iloc[0]
+        days = td.round('d')
+        if td > days:
+            days = days + '1d'
+        days_to_plot = days.days + 1
+        ax.set_xlim([1, days_to_plot - 16/24])
+        plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+        plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+        plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+        # Decrease the offset for tick labels on all axes
+        ax.xaxis.labelpad = 0.5
+        ax.yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        ax.tick_params(axis='x', pad=0.5, length=2)
+        ax.tick_params(axis='y', pad=0.5, length=2)
+
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_condition_{0}.pdf".format(species_f.replace(' ', '-'))), dpi=350)
+        plt.close()
+    return
+
+
+def weekly_individual_figure(rootdir, feature, fish_tracks_bin, change_times_m, bin_size_min=30):
+    """ Plots the weekly data of each fish for each species
+
+    :param rootdir:
+    :param feature:
+    :param fish_tracks_ds:
+    :param species:
+    :return:
+    """
+
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    num_day_bins, bins_per_h, _, _, _, _, _, _, border_bottom_week, border_top_week = peak_borders(bin_size_min, change_times_m)
+    dawn_s, dawn_e, dusk_s, dusk_e = (change_times_m[0]-60)/60, (change_times_m[0]+60)/60, (change_times_m[3]-60)/60, (change_times_m[3] + 60) / 60
+
+    date_form = DateFormatter("%H")
+
+    for species_name in fish_tracks_bin.species.unique():
+        fish_feature = fish_tracks_bin.loc[fish_tracks_bin.species == species_name, ['ts', 'FishID', feature]].pivot(
+            columns='FishID', values=feature, index='ts')
+
+        fig2, ax2 = plt.subplots(len(fish_feature.columns), 1, figsize=(2.5, 0.8*len(fish_feature.columns)))
+        ax2[-1].set_ylabel(feature)
+        for fish, fish_name in enumerate(fish_feature.columns):
+            for day in range(7):
+                ax2[fish].axvspan(dawn_s * bins_per_h + day * num_day_bins, dawn_e * bins_per_h + day * num_day_bins,
+                            color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_s * bins_per_h + day * num_day_bins, dusk_e * bins_per_h + day * num_day_bins,
+                                  color='wheat', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(0 + day * num_day_bins, dawn_s * bins_per_h + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
+                ax2[fish].axvspan(dusk_e * bins_per_h + day * num_day_bins, num_day_bins + day * num_day_bins,
+                            color='lightblue', alpha=0.5, linewidth=0)
+
+            x = fish_feature.iloc[:, fish]
+            ax2[fish].plot(np.arange(len(fish_feature.index)), x, linewidth=0.5)
+            ax2[fish].title.set_text(fish_name)
+
+            ax2[fish].xaxis.set_major_locator(MultipleLocator(num_day_bins))
+            ax2[fish].xaxis.set_major_formatter(date_form)
+            ax2[fish].set_xlim(0, num_day_bins*6)
+            plt.xlabel("Time (h)")
+            plt.ylabel("Speed (mm/s)")
+            sns.despine(top=True, right=True)
+            for axis in ['top', 'bottom', 'left', 'right']:
+                ax2[fish].spines[axis].set_linewidth(0.5)
+            ax2[fish].tick_params(width=0.5)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_weekly_individuals_{}_bin_size_{}min.pdf".format(species_name, bin_size_min)), dpi=350)
+        plt.close()
     return

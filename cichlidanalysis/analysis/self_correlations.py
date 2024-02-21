@@ -3,9 +3,9 @@ import os
 import datetime as dt
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib as matplotlib
 import numpy as np
 import pandas as pd
-import scipy.cluster.hierarchy as sch
 
 from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave
 
@@ -61,6 +61,14 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     :param link_method:
     :return:
     """
+
+    # font sizes
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+    BIGGER_SIZE = 10
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
     # issue with some columns being all zeros and messing up correlation so drop these columns
     averages_feature_dropped = averages_feature.loc[(averages_feature.sum(axis=1) != 0), (averages_feature.sum(axis=0) != 0)]
     individ_corr = averages_feature_dropped.corr(method='pearson')
@@ -70,7 +78,7 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     corr_val_f = individ_corr.values[mask]
     corr_vals = pd.DataFrame(corr_val_f, columns=[species_name])
 
-    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+    ax = sns.clustermap(individ_corr, figsize=(5, 2), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='RdBu_r', xticklabels=False, yticklabels=False)
 
     ax.fig.suptitle(feature)
@@ -96,7 +104,39 @@ def species_daily_corr(rootdir, averages_feature, feature, label, link_method='s
     plt.close()
 
 
-def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
+
+def plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature):
+
+    # font sizes
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    f, ax = plt.subplots(figsize=(2, 6))
+    sns.boxplot(data=mean_corr_per_fish, x='corr_coef', y='species', ax=ax, fliersize=0, color='gainsboro',
+                order=mean_corr_per_fish.groupby('species').mean().sort_values("corr_coef").index.to_list(),
+                linewidth=1)
+    sns.stripplot(data=mean_corr_per_fish, x='corr_coef', y='species', color=".2", ax=ax, size=2,
+                  order=mean_corr_per_fish.groupby('species').mean().sort_values("corr_coef").index.to_list())
+    ax.set(xlabel='Correlation', ylabel='Species')
+    ax.set(xlim=(-1, 1))
+    ax = plt.axvline(0, ls='--', color='k', linewidth=1)
+    ax = plt.gca()
+    spines = ["top", "right"]
+    for s in spines:
+        ax.spines[s].set_visible(False)
+    ax.spines['left'].set_linewidth(0.5)
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "intra_individual_variability_fish_corr_coefs_{0}.pdf".format(feature)))
+    plt.close()
+    return
+
+
+def intra_individ_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -105,6 +145,7 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """
     species = fish_tracks_ds['species'].unique()
 
+    first2 = True
     for species_i in species:
 
         fishes = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, 'FishID'].unique()
@@ -143,6 +184,20 @@ def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
         plt.savefig(os.path.join(rootdir, "individual_day_corr_coef_by_30min_{0}_{1}.png".format(feature, species_i)))
         plt.close()
 
+        # find mean for each fish and save
+        if first2:
+            mean_corr_per_fish = pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})
+            mean_corr_per_fish['species'] = species_i
+            first2 = False
+        else:
+            mean_corr_per_fish_sp = pd.DataFrame(corr_vals.mean()).reset_index().rename(columns={'index': 'FishID', 0: "corr_coef"})
+            mean_corr_per_fish_sp['species'] = species_i
+            mean_corr_per_fish = pd.concat([mean_corr_per_fish, mean_corr_per_fish_sp], axis=0)
+    mean_corr_per_fish = mean_corr_per_fish.reset_index(drop=True)
+    plot_corr_coefs_individual_means(rootdir, mean_corr_per_fish, feature)
+    return mean_corr_per_fish
+
+
 
 def get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes):
     """
@@ -172,15 +227,31 @@ def get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes):
 
 
 def plot_corr_coefs(rootdir, corr_vals_long, feature, title):
-    f, ax = plt.subplots(figsize=(4, 10))
+
+    # font sizes
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    f, ax = plt.subplots(figsize=(2, 6))
     sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0, color='gainsboro',
-                order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
-    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=3,
+                order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list(),
+                linewidth=1)
+    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=2,
                   order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
     ax.set(xlabel='Correlation', ylabel='Species')
     ax.set(xlim=(-1, 1))
-    ax = plt.axvline(0, ls='--', color='k')
+    ax = plt.axvline(0, ls='--', color='k', linewidth=1)
+    ax = plt.gca()
+    spines = ["top", "right"]
+    for s in spines:
+        ax.spines[s].set_visible(False)
+    ax.spines['left'].set_linewidth(0.5)
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.png".format(feature, title)))
+    plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.pdf".format(feature, title)))
     plt.close()
     return
