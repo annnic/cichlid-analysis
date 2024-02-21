@@ -4,7 +4,7 @@ import os
 import datetime as dt
 import pandas as pd
 
-from cichlidanalysis.utils.timings import load_timings
+from cichlidanalysis.utils.timings import load_timings, load_timings_14_8
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_bin_als_files
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure, weekly_individual_figure
