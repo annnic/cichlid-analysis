@@ -66,9 +66,6 @@ def plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns,
     plt.close()
 
 
-
-
-
 def plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data):
     guilds = feature_v_eco.diet.unique()
     diet_col_dic = {'Zooplanktivore': 'sandybrown', 'Algivore': 'mediumseagreen', 'Invertivore': 'tomato',

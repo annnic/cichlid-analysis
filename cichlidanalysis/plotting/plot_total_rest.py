@@ -18,31 +18,30 @@ def plot_total_rest_ordered(rootdir, feature_v):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     MEDIUM_SIZE = 8
-    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
     sns.set_context(rc={"lines.linewidth": 0.5})
 
-    fig = plt.figure(figsize=(1.5, 4.5))
-    ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', dodge=False,
+    fig = plt.figure(figsize=(7, 1.5))
+    ax = sns.boxplot(data=feature_v, x='six_letter_name_Ronco', y='total_rest', dodge=False,
                      showfliers=False, color='silver', linewidth=0.5,
                      order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values("total_rest").index.to_list())
     for patch in ax.artists:
         fc = patch.get_facecolor()
         patch.set_facecolor(mcolors.to_rgba(fc, 0.3))
-    ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=1,
+    ax = sns.swarmplot(data=feature_v, x='six_letter_name_Ronco', y='total_rest', color=".2", size=1,
                        order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values(
                            "total_rest").index.to_list(), linewidth=0.5)
-    ax.set(xlabel='Average total rest per day', ylabel='Species')
-    ax.set(xlim=(0, 24))
+    ax.set(ylabel='Average total rest per day', xlabel='Species')
+    ax.set(ylim=(0, 24))
+    plt.xticks(rotation=90)
     plt.tight_layout()
-    plt.axvline(12, ls='--', color='k', lw=0.5)
+    plt.axhline(12, ls='--', color='k', lw=0.5)
     sns.despine(top=True, right=True)
     # Access the spines and set the linewidth
     for spine in ax.spines.values():
         spine.set_linewidth(0.5)
-    # ax.spines['left'].set_linewidth(0.5)
-    # ax.spines['bottom'].set_linewidth(0.5)
-    # ax.tick_params(width=0.5)
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered.pdf"), dpi=350)
+    ax.tick_params(width=0.5)
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered_horizontal.pdf"), dpi=350)
     plt.close()
     return
 

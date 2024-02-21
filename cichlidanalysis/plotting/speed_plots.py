@@ -300,7 +300,7 @@ def plot_ridge_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeli
 
         ax_objs[-1].text(0.9, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
-    plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_{1}.png".format(feature, dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species.png".format(feature)))
     plt.close('all')
     aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
     return aves_feature, date_time_obj, sp_feature_combined
@@ -400,7 +400,7 @@ def plot_ridge_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, y
 
         ax_objs[-1].text(1, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
-    plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily.png".format(feature)))
     plt.close('all')
     return
 
