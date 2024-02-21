@@ -101,6 +101,7 @@ if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
     rootdir = select_dir_path()
     loadings = pd.read_csv(os.path.join(rootdir, 'pca_loadings.csv'))
+    diel_guilds = pd.read_csv(os.path.join(rootdir, 'diel_guilds.csv'))
 
     feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
 
@@ -131,31 +132,6 @@ if __name__ == '__main__':
     # regression between features
     fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
 
-    # ## heatmap of fv
-    # averages_vals = averages.drop(averages[averages.isna().any(axis=1)].index)
-    # rows = []
-    # for i, element in enumerate(averages_vals.iloc[:, 0]):
-    #     if isinstance(element, float):
-    #         rows.append(i)
-    # averages_vals = averages_vals.iloc[rows, :]
-    # averages_norm = averages_vals.div(averages_vals.sum(axis=1), axis=0)
-
-    # fig1, ax1 = plt.subplots()
-    # fig1.set_figheight(6)
-    # fig1.set_figwidth(12)
-    # im_spd = ax1.imshow(averages_norm.T, aspect='auto', vmin=0, cmap='magma')
-    # ax1.get_yaxis().set_ticks(np.arange(0, len(species)))
-    # ax1.get_yaxis().set_ticklabels(averages_norm.columns, rotation=0)
-    # ax1.get_xaxis().set_ticks(np.arange(0, averages_norm.shape[0]))
-
-    # ax1.get_xaxis().set_ticklabels(averages_norm.index, rotation=90)
-    # plt.title('Feature vector (normalised by feature)')
-    # fig1.tight_layout(pad=3)
-
-    # # clustered heatmap of  fv
-    # fig = sns.clustermap(averages_norm, figsize=(20, 10), col_cluster=False, method='single', yticklabels=True)
-    # plt.savefig(os.path.join(rootdir, "cluster_map_fv_{0}.png".format(datetime.date.today())))
-
     ### summary statistics ###
     # N per species histogram
     fig = plt.figure(figsize=(5, 5))
@@ -164,9 +140,6 @@ if __name__ == '__main__':
     ax.set_xlim([0, 14])
     plt.savefig(os.path.join(rootdir, "Individuals_for_each_species.png"), dpi=1000)
     plt.close()
-
-    # number of species
-    # feature_v["six_letter_name_Ronco"].value_counts()
 
     ### plotting total rest plots ###
     plot_total_rest_ordered(rootdir, feature_v)
@@ -236,6 +209,7 @@ if __name__ == '__main__':
     plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc2', cmap_n=cmr.iceburn)
 
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
+    plot_ecospace_vs_temporal_guilds_density(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
 
     # save out data for PGLS corr in R
