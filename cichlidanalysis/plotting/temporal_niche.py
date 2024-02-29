@@ -120,3 +120,9 @@ if __name__ == '__main__':
 
     plot_temporal_niche_one(rootdir, aves_ave_rest, loadings, diel_guilds)
 
+
+    df = pd.merge(loadings, diel_guilds, on='species')
+    sns.lmplot(x="pc1", y="pc2", data=df, fit_reg=False, hue='diel_guild', legend=True)
+    plt.savefig(os.path.join(rootdir, "pc1_pc2_diel_guilds.pdf"), dpi=350)
+    plt.close()
+

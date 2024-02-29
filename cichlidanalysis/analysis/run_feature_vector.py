@@ -209,7 +209,7 @@ if __name__ == '__main__':
     plot_ecospace_vs_feature(rootdir, ronco_data, loadings, fv_eco_sp_ave, pc='pc2', cmap_n=cmr.iceburn)
 
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
-    plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave, diel_guilds)
+    plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, fv_eco_sp_ave, diel_guilds)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
 
     # save out data for PGLS corr in R

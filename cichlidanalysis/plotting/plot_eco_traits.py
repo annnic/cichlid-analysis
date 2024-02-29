@@ -12,7 +12,7 @@ import cmasher as cmr
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
 
-def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, col_dic_simple, fv_eco_sp_ave, diel_guilds):
+def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, fv_eco_sp_ave, diel_guilds):
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
     MEDIUM_SIZE = 8
@@ -113,12 +113,16 @@ def plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns):
 
 
 def plot_total_rest_vs_diet_significance(rootdir, feature_v_eco):
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
     feature_v_eco_species = feature_v_eco.loc[:, ['diet', 'habitat', 'six_letter_name_Ronco', 'total_rest', 'rest_mean_night',
                                 'rest_mean_day', 'fish_length_mm', 'night-day_dif_rest', 'fish_n', 'species_true',
                                 'species_our_names', 'species_six']].drop_duplicates().reset_index(drop=True)
     colors = ['mediumseagreen', 'sandybrown', 'tomato', 'steelblue']
     diet_order = ['Algivore', 'Zooplanktivore', 'Invertivore', 'Piscivore']
-    customPalette = sns.set_palette(sns.color_palette(colors))
 
     stats_array = np.zeros([len(diet_order), len(diet_order)])
     for diet_1_n, diet_1 in enumerate(diet_order):
@@ -127,9 +131,9 @@ def plot_total_rest_vs_diet_significance(rootdir, feature_v_eco):
                                                                                            == diet_1,'total_rest'],
                                                                  feature_v_eco_species.loc[feature_v_eco_species.diet ==
                                                                                            diet_2, 'total_rest'])
-    fig = plt.figure(figsize=(3, 3))
+    fig = plt.figure(figsize=(2, 2))
     ax = sns.boxplot(data=feature_v_eco_species, x='diet', y='total_rest', dodge=False, showfliers=False, order=diet_order)
-    ax = sns.swarmplot(data=feature_v_eco_species, x='diet', y='total_rest', color=".2", size=4, order=diet_order)
+    ax = sns.swarmplot(data=feature_v_eco_species, x='diet', y='total_rest', color=".2", size=2, order=diet_order)
     ax.set(xlabel='Diet Guild', ylabel='Average total rest per day')
     ax.set(ylim=(0, 24))
     plt.xticks(rotation='45', ha="right")
@@ -141,8 +145,11 @@ def plot_total_rest_vs_diet_significance(rootdir, feature_v_eco):
             plt.text(diet_i_n, y, "ns", ha='center', va='bottom', color=col)
 
     sns.despine(top=True, right=True)
+    for axis in ['bottom', 'left']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance.png"))
+    plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance.pdf"), dpi=350)
     plt.close()
     return
 
