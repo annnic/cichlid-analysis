@@ -93,6 +93,7 @@ def plot_total_rest_diet(rootdir, feature_v):
     plt.close()
     return
 
+
 def plot_total_rest_hist(rootdir, feature_v, feature_v_mean):
     """ histogram of total rest timings
     :param rootdir:

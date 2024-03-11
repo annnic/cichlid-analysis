@@ -103,6 +103,8 @@ if __name__ == '__main__':
     # data gets heavy so remove what is not necessary
     fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
 
+    # get the vertical position for
+
     # resample data
     fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
     fish_tracks_30m.reset_index(inplace=True)

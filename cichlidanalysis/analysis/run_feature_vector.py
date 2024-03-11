@@ -215,12 +215,14 @@ if __name__ == '__main__':
     # save out data for PGLS corr in R
     ronco_data_ave = ronco_data.groupby(by='sp').mean()
     ronco_data_ave = ronco_data_ave.rename_axis('species').reset_index()
-    cichild_corr_data = pd.merge(loadings, ronco_data_ave, on='species')
+    cichild_corr_data = pd.merge(loadings, ronco_data_ave, on='species', how='left')
     # Missing some species as they don't have data in ronco
     # set(cichild_corr_data.species) ^ set(loadings.species)
     # {'Astbur', 'Neolon', 'Neodev', 'Telluf'}
-    cichild_corr_data = pd.merge(cichild_corr_data, feature_v_mean.rename(columns={'six_letter_name_Ronco': 'species'}).loc[:, ['species','total_rest']], on='species')
-    cichild_corr_data.to_csv(os.path.join(rootdir, 'cichild_corr_data.csv'), sep=',', index=False, encoding='utf-8')
+    cichild_corr_data = pd.merge(cichild_corr_data, feature_v_mean.rename(columns={'six_letter_name_Ronco': 'species'}).
+                                 loc[:, ['species','total_rest']], on='species', how='left')
+    cichild_corr_data.to_csv(os.path.join(rootdir, 'cichild_pc-loadings_eco-morph_rest_full.csv'), sep=',', index=False,
+                             encoding='utf-8')
 
     plot_ecospace_vs_feature_rest(rootdir, ronco_data, cichild_corr_data, fv_eco_sp_ave, feature='total_rest',
                                   cmap_n=cmr.iceburn)
