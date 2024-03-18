@@ -9,6 +9,7 @@ from cichlidanalysis.io.tracks import adjust_old_time
 
 
 def load_als_files(folder, suffix="*als.csv"):
+    # Takes data from the midnight of the first day
     os.chdir(folder)
     files = glob.glob(suffix)
     files.sort()

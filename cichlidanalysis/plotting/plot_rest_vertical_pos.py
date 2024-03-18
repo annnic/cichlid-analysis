@@ -38,21 +38,21 @@ def plot_rest_vs_vp(rootdir, rest_vp_sp):
         t_statistic, p_value = ttest_rel(df_subset_non_rest, df_subset_rest)
 
         if first:
-            pvals = dict({species: np.round(p_value[0], 2)})
+            pvals = dict({species: p_value[0]})
             first = False
         else:
-            pvals[species] = np.round(p_value[0], 2)
+            pvals[species] = p_value[0]
     rest_vp_sp['rest'] = rest_vp_sp['rest'].astype(str)
 
     fig = plt.figure(figsize=(7, 1.5))
     ax = sns.boxplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos',
-                     showfliers=False, linewidth=0.5, hue='rest', palette=hue_colors)
-                     # order=rest_vp_sp.groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list())
+                     showfliers=False, linewidth=0.5, hue='rest', palette=hue_colors,
+                     order=rest_vp_sp.loc[rest_vp_sp.rest == '1', :].groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list())
     # for patch in ax.artists:
     #     fc = patch.get_facecolor()
     #     patch.set_facecolor(mcolors.to_rgba(fc, 0.3))
-    ax = sns.swarmplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos', size=1, hue='rest', color='black', dodge=True)
-                       # order=rest_vp_sp.groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list(), linewidth=0.5)
+    ax = sns.swarmplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos', size=1, hue='rest', color='black',
+                       dodge=True, order=rest_vp_sp.loc[rest_vp_sp.rest == '1', :].groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list(), linewidth=0.5)
     ax.set(ylabel='Vertical position', xlabel='Species')
     ax.set(ylim=(0, 1))
     plt.xticks(rotation=90)
@@ -64,10 +64,17 @@ def plot_rest_vs_vp(rootdir, rest_vp_sp):
     ax.tick_params(width=0.5)
 
     num_sp = len(all_species)
+    # bonferrroni correction
+    alpha_corrected = 0.05 / num_sp
+    pvals_sig = pd.DataFrame.from_dict([pvals]).transpose()
+    pvals_sig.rename(columns={pvals_sig.columns[0]: "pval"}, inplace=True)
+    pvals_sig['pval_sig'] = 'ns'
+    pvals_sig.loc[pvals_sig.pval < alpha_corrected, 'pval_sig'] = '*'
     for i, species in enumerate(all_species):
         x_pos = i
         y_pos = 1
-        plt.text(x_pos, y_pos, pvals[species], ha='center', va='center', size=SMALLEST_SIZE)
+        plt.text(x_pos, y_pos,  pvals_sig.loc[pvals_sig.index == species, 'pval_sig'].values[0], ha='center',
+                 va='bottom', size=SMALLEST_SIZE)
 
     plt.savefig(os.path.join(rootdir, "vertical_position_by_rest_horizontal.pdf"), dpi=350)
     plt.close()

@@ -11,6 +11,7 @@ import time
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
@@ -18,6 +19,7 @@ from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import threshold_data, remove_cols
 from cichlidanalysis.analysis.behavioural_state import define_rest
+from cichlidanalysis.plotting.single_plots import plot_hist_2
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -93,6 +95,46 @@ if __name__ == '__main__':
 
     # data gets heavy so remove what is not necessary
     fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
+
+    # plot density of position for day and night (or rest and non-rest)
+    # remove rows after 6th day midnight (load_als_files data already only has data from the first midnight)
+    # split data into day and night
+    position_day_x = fish_tracks.loc[fish_tracks.daynight=='d', 'horizontal_pos']
+    position_night_x = fish_tracks.loc[fish_tracks.daynight=='n', 'horizontal_pos']
+    position_day_y = fish_tracks.loc[fish_tracks.daynight=='d', 'vertical_pos']
+    position_night_y = fish_tracks.loc[fish_tracks.daynight=='n', 'vertical_pos']
+
+    # plot position (fix = remove x,y when they were over threshold)
+    bin_edges_plot = np.linspace(0, 1, 10)
+    plot_hist_2(bin_edges_plot, position_day_x, "day", position_day_y, "night", "Y position", 1)
+
+    fig, (ax1) = plt.subplots(1, 1, sharey=True)
+    ax1.hist2d(position_day_x[~np.isnan(position_day_x)], position_day_y[~np.isnan(position_day_y)], bins=[3, 10],
+               cmap='inferno')
+    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos.pdf"), dpi=350)
+    plt.close()
+
+    # plot position (fix = remove x,y when they were over threshold)
+
+    # fig, (ax1, ax2) = plt.subplots(2, 7, sharey=True)
+    # for day in range(NUM_DAYS):
+    #     position_night_x = horizontal_pos[np.where((tv_sec > (change_times_s[3] + day_s * day)) &
+    #                                      (tv_sec < (change_times_s[0] + day_s * (day + 1))))]
+    #     position_night_y = vertical_pos[np.where((tv_sec > (change_times_s[3] + day_s * day)) &
+    #                                      (tv_sec < (change_times_s[0] + day_s * (day + 1))))]
+    #
+    #     position_day_x = horizontal_pos[np.where((tv_sec > (change_times_s[0] + day_s * day)) &
+    #                                    (tv_sec < (change_times_s[3] + day_s * day)))]
+    #     position_day_y = vertical_pos[np.where((tv_sec > (change_times_s[0] + day_s * day)) &
+    #                                    (tv_sec < (change_times_s[3] + day_s * day)))]
+    #
+    #     ax1[day].hist2d(position_day_x[~np.isnan(position_day_x)],
+    #                     neg_values(position_day_y[~np.isnan(position_day_y)]),
+    #                     bins=10, range=[[xmin, xmax], [-ymax, ymin]], cmap='inferno')
+    #     ax2[day].hist2d(position_night_x[~np.isnan(position_night_x)],
+    #                     neg_values(position_night_y[~np.isnan(position_night_y)]),
+    #                     bins=10, range=[[xmin, xmax], [-ymax, ymin]], cmap='inferno')
+    # plt.savefig(os.path.join(rootdir, "{0}_hist2d_D_vs_N_split_days_spt.png".format(FISH_ID)))
 
     # get the vertical position for rest and non-rest periods for each fish
     # for each indidviudal, rest yes/no, vp
