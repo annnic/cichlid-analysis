@@ -12,6 +12,8 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
@@ -104,37 +106,47 @@ if __name__ == '__main__':
     position_day_y = fish_tracks.loc[fish_tracks.daynight=='d', 'vertical_pos']
     position_night_y = fish_tracks.loc[fish_tracks.daynight=='n', 'vertical_pos']
 
+    position_rest_x = fish_tracks.loc[fish_tracks.rest==1, 'horizontal_pos']
+    position_nonrest_x = fish_tracks.loc[fish_tracks.rest==0, 'horizontal_pos']
+    position_rest_y = fish_tracks.loc[fish_tracks.rest==1, 'vertical_pos']
+    position_nonrest_y = fish_tracks.loc[fish_tracks.rest==0, 'vertical_pos']
+
     # plot position (fix = remove x,y when they were over threshold)
     bin_edges_plot = np.linspace(0, 1, 10)
     plot_hist_2(bin_edges_plot, position_day_x, "day", position_day_y, "night", "Y position", 1)
 
-    fig, (ax1) = plt.subplots(1, 1, sharey=True)
-    ax1.hist2d(position_day_x[~np.isnan(position_day_x)], position_day_y[~np.isnan(position_day_y)], bins=[3, 10],
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    MEDIUM_SIZE = 8
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+    font = {'size': SMALL_SIZE}
+    plt.rc('font', **font)
+    sns.set_context(rc={"lines.linewidth": 0.5})
+
+    # day vs night
+    fig, axs = plt.subplots(1, 2, sharey=True, figsize=[1.5, 2])
+    axs[0].hist2d(position_day_x[~np.isnan(position_day_x)], position_day_y[~np.isnan(position_day_y)], bins=[3, 10],
                cmap='inferno')
-    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos.pdf"), dpi=350)
+    axs[1].hist2d(position_night_x[~np.isnan(position_night_x)], position_night_y[~np.isnan(position_night_y)], bins=[3, 10],
+               cmap='inferno')
+    axs[0].title.set_text('Day')
+    axs[1].title.set_text('Night')
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos_day_night.pdf"), dpi=350)
     plt.close()
 
-    # plot position (fix = remove x,y when they were over threshold)
-
-    # fig, (ax1, ax2) = plt.subplots(2, 7, sharey=True)
-    # for day in range(NUM_DAYS):
-    #     position_night_x = horizontal_pos[np.where((tv_sec > (change_times_s[3] + day_s * day)) &
-    #                                      (tv_sec < (change_times_s[0] + day_s * (day + 1))))]
-    #     position_night_y = vertical_pos[np.where((tv_sec > (change_times_s[3] + day_s * day)) &
-    #                                      (tv_sec < (change_times_s[0] + day_s * (day + 1))))]
-    #
-    #     position_day_x = horizontal_pos[np.where((tv_sec > (change_times_s[0] + day_s * day)) &
-    #                                    (tv_sec < (change_times_s[3] + day_s * day)))]
-    #     position_day_y = vertical_pos[np.where((tv_sec > (change_times_s[0] + day_s * day)) &
-    #                                    (tv_sec < (change_times_s[3] + day_s * day)))]
-    #
-    #     ax1[day].hist2d(position_day_x[~np.isnan(position_day_x)],
-    #                     neg_values(position_day_y[~np.isnan(position_day_y)]),
-    #                     bins=10, range=[[xmin, xmax], [-ymax, ymin]], cmap='inferno')
-    #     ax2[day].hist2d(position_night_x[~np.isnan(position_night_x)],
-    #                     neg_values(position_night_y[~np.isnan(position_night_y)]),
-    #                     bins=10, range=[[xmin, xmax], [-ymax, ymin]], cmap='inferno')
-    # plt.savefig(os.path.join(rootdir, "{0}_hist2d_D_vs_N_split_days_spt.png".format(FISH_ID)))
+    # rest vs non-rest
+    fig, axs = plt.subplots(1, 2, sharey=True, figsize=[1.5, 2])
+    axs[0].hist2d(position_nonrest_x[~np.isnan(position_nonrest_x)], position_nonrest_y[~np.isnan(position_nonrest_y)], bins=[3, 10],
+               cmap='inferno')
+    axs[1].hist2d(position_rest_x[~np.isnan(position_rest_x)], position_rest_y[~np.isnan(position_rest_y)], bins=[3, 10],
+               cmap='inferno')
+    axs[0].title.set_text('Active')
+    axs[1].title.set_text('Rest')
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos_active-rest.pdf"), dpi=350)
+    plt.close()
 
     # get the vertical position for rest and non-rest periods for each fish
     # for each indidviudal, rest yes/no, vp

@@ -48,9 +48,6 @@ def plot_rest_vs_vp(rootdir, rest_vp_sp):
     ax = sns.boxplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos',
                      showfliers=False, linewidth=0.5, hue='rest', palette=hue_colors,
                      order=rest_vp_sp.loc[rest_vp_sp.rest == '1', :].groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list())
-    # for patch in ax.artists:
-    #     fc = patch.get_facecolor()
-    #     patch.set_facecolor(mcolors.to_rgba(fc, 0.3))
     ax = sns.swarmplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos', size=1, hue='rest', color='black',
                        dodge=True, order=rest_vp_sp.loc[rest_vp_sp.rest == '1', :].groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list(), linewidth=0.5)
     ax.set(ylabel='Vertical position', xlabel='Species')
