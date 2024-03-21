@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
+import cmasher as cmr
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
@@ -125,26 +126,67 @@ if __name__ == '__main__':
     sns.set_context(rc={"lines.linewidth": 0.5})
 
     # day vs night
+    x_day = position_day_x[~np.isnan(position_day_x)]
+    y_day = position_day_y[~np.isnan(position_day_y)]
+    hist, xedges, yedges = np.histogram2d(x_day, y_day, bins=[3, 10])
+    total_count = np.sum(hist)
+    hist_fraction_day = hist / total_count
+
+    x_night = position_night_x[~np.isnan(position_night_x)]
+    y_night =  position_night_y[~np.isnan(position_night_y)]
+    hist, xedges, yedges = np.histogram2d(x_night, y_night, bins=[3, 10])
+    total_count = np.sum(hist)
+    hist_fraction_night = hist / total_count
+
     fig, axs = plt.subplots(1, 2, sharey=True, figsize=[1.5, 2])
-    axs[0].hist2d(position_day_x[~np.isnan(position_day_x)], position_day_y[~np.isnan(position_day_y)], bins=[3, 10],
-               cmap='inferno')
-    axs[1].hist2d(position_night_x[~np.isnan(position_night_x)], position_night_y[~np.isnan(position_night_y)], bins=[3, 10],
-               cmap='inferno')
+    im = axs[0].imshow(np.transpose(hist_fraction_day), extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
+                       cmap=cmr.neutral_r, origin='lower', aspect=3, vmin=0, vmax=0.3)
+    axs[1].imshow(np.transpose(hist_fraction_night), extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
+                  cmap=cmr.neutral_r, origin='lower', aspect=3, vmin=0, vmax=0.3)
     axs[0].title.set_text('Day')
+    axs[0].set_yticks([0, 1])
+    axs[0].set_yticklabels(['Bottom', 'Top'])
+    axs[0].set_xticks([0, 1])
+    axs[0].set_xticklabels(['Left', 'Right'], rotation=90)
+
     axs[1].title.set_text('Night')
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos_day_night.pdf"), dpi=350)
+    axs[1].set_yticks([0, 1])
+    axs[1].set_yticklabels(['Bottom', 'Top'])
+    axs[1].set_xticks([0, 1])
+    axs[1].set_xticklabels(['Left', 'Right'], rotation=90)
+    cbar = fig.colorbar(im, ax=axs, orientation='vertical', label='Fraction')
+    plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos_day-night.pdf"), dpi=350)
     plt.close()
 
     # rest vs non-rest
+    x_nonrest = position_nonrest_x[~np.isnan(position_nonrest_x)]
+    y_nonrest = position_nonrest_y[~np.isnan(position_nonrest_y)]
+    hist, xedges, yedges = np.histogram2d(x_nonrest, y_nonrest, bins=[3, 10])
+    total_count = np.sum(hist)
+    hist_fraction_nonrest = hist / total_count
+
+    x_rest = position_rest_x[~np.isnan(position_rest_x)]
+    y_rest = position_rest_y[~np.isnan(position_rest_y)]
+    hist, xedges, yedges = np.histogram2d(x_rest, y_rest, bins=[3, 10])
+    total_count = np.sum(hist)
+    hist_fraction_rest = hist / total_count
+
     fig, axs = plt.subplots(1, 2, sharey=True, figsize=[1.5, 2])
-    axs[0].hist2d(position_nonrest_x[~np.isnan(position_nonrest_x)], position_nonrest_y[~np.isnan(position_nonrest_y)], bins=[3, 10],
-               cmap='inferno')
-    axs[1].hist2d(position_rest_x[~np.isnan(position_rest_x)], position_rest_y[~np.isnan(position_rest_y)], bins=[3, 10],
-               cmap='inferno')
+    im = axs[0].imshow(np.transpose(hist_fraction_nonrest), extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
+                       cmap=cmr.neutral_r, origin='lower', aspect=3, vmin=0, vmax=0.3)
+    axs[1].imshow(np.transpose(hist_fraction_rest), extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
+                  cmap=cmr.neutral_r, origin='lower', aspect=3, vmin=0, vmax=0.3)
     axs[0].title.set_text('Active')
+    axs[0].set_yticks([0, 1])
+    axs[0].set_yticklabels(['Bottom', 'Top'])
+    axs[0].set_xticks([0, 1])
+    axs[0].set_xticklabels(['Left', 'Right'], rotation=90)
     axs[1].title.set_text('Rest')
-    plt.tight_layout()
+    axs[1].set_yticks([0, 1])
+    axs[1].set_yticklabels(['Bottom', 'Top'])
+    axs[1].set_xticks([0, 1])
+    axs[1].set_xticklabels(['Left', 'Right'], rotation=90)
+    cbar = fig.colorbar(im, ax=axs, orientation='vertical', label='Fraction')
     plt.savefig(os.path.join(rootdir, "2D_hist_vertical_pos_active-rest.pdf"), dpi=350)
     plt.close()
 
