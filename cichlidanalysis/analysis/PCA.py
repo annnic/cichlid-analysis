@@ -258,7 +258,7 @@ if __name__ == '__main__':
     plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_pc=2)
 
     pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
-    plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2'])
+    plot_pc(rootdir, finalDf, list_pcs=['pc1', 'pc2', 'pc3'])
 
     # figure 1
     plot_variance_explained(rootdir, pca)

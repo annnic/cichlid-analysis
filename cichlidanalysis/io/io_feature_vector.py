@@ -141,7 +141,5 @@ def load_diel_pattern(folder, suffix="*dp.csv"):
     # use most up to date file
     data = pd.read_csv(os.path.join(folder, files[-1]), sep=',')
 
-    data = data.drop(columns="Unnamed: 0")
-
     print("Most up to date file loaded")
     return data

@@ -71,13 +71,13 @@ def setup_feature_vector_data(rootdir):
                                 on="six_letter_name_Ronco")
     species = feature_v['six_letter_name_Ronco'].unique()
 
-    # add column for cluster, hardcoded!!!!
-    dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
-    feature_v['cluster_pattern'] = 'placeholder'
-    for key in dic_simple:
-        # find the species which are in diel cluster group
-        sp_diel_group = set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species'].to_list())
-        feature_v.loc[feature_v.six_letter_name_Ronco.isin(sp_diel_group), 'cluster_pattern'] = key
+    # # add column for cluster, hardcoded!!!!
+    # dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
+    # feature_v['cluster_pattern'] = 'placeholder'
+    # for key in dic_simple:
+    #     # find the species which are in diel cluster group
+    #     sp_diel_group = set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species'].to_list())
+    #     feature_v.loc[feature_v.six_letter_name_Ronco.isin(sp_diel_group), 'cluster_pattern'] = key
 
     # make species average
     for species_n, species_name in enumerate(species):
@@ -86,7 +86,7 @@ def setup_feature_vector_data(rootdir):
 
         # calculate ave and stdv
         average = sp_subset.mean(axis=0)
-        average = average.append(pd.Series(sp_subset.cluster_pattern.unique()[0], index=['cluster_pattern']))
+        # average = average.append(pd.Series(sp_subset.cluster_pattern.unique()[0], index=['cluster_pattern']))
         average = average.rename(species_name)
         if species_n == 0:
             averages = average

@@ -44,7 +44,7 @@ def plot_rest_vs_vp(rootdir, rest_vp_sp):
             pvals[species] = p_value[0]
     rest_vp_sp['rest'] = rest_vp_sp['rest'].astype(str)
 
-    fig = plt.figure(figsize=(7, 1.5))
+    fig = plt.figure(figsize=(7, 3))
     ax = sns.boxplot(data=rest_vp_sp, x='six_letter_name_Ronco', y='vertical_pos',
                      showfliers=False, linewidth=0.5, hue='rest', palette=hue_colors,
                      order=rest_vp_sp.loc[rest_vp_sp.rest == '1', :].groupby('six_letter_name_Ronco').mean().sort_values("vertical_pos").index.to_list())
