@@ -238,8 +238,8 @@ if __name__ == '__main__':
     ########### other preprocessed/setups
     # # log transform
     # aves_ave_spd_log = np.log(aves_ave_spd)
-    # aves_ave_spd.transpose() = ts as feature
-    # aves_ave_spd = species as features
+    # aves_ave_spd = ts as feature
+    # aves_ave_spd.transpose() = species as features
     # sp_feature_combined_daily = individual fish as features
 
     # aves_ave_spd with zscore is the input used for the paper
@@ -336,5 +336,75 @@ if __name__ == '__main__':
     # plt.legend()
     plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
     plt.close()
+
+
+    # testing dif PCA dataset
+    from sklearn import datasets, decomposition
+
+    file = 'iris_dataset.csv'
+    iris_df = pd.read_csv(os.path.join(rootdir, file), sep=',')
+
+    np.random.seed(5)
+
+    iris = datasets.load_iris()
+    X = iris.data
+    y = iris.target
+
+    pca_iris, labels_iris, loadings_iris, finalDf_iris, principalComponents_iris, data_input_norm_iris = run_pca(rootdir, iris_df.iloc[:, 1:-2], norm=norm_method, n_com=3)
+
+    fig = plt.figure(figsize=(1.5, 1.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.scatter(finalDf_iris.loc[:, 'pc1'], finalDf_iris.loc[:, 'pc2'])
+    plt.savefig(os.path.join(rootdir, "Iris_pc1_vs_pc2.png"), dpi=350)
+    plt.close()
+
+    fig = plt.figure(figsize=(1.5, 1.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.scatter(loadings_iris.loc[:, 'pc1'], loadings_iris.loc[:, 'pc2'])
+    plt.savefig(os.path.join(rootdir, "Iris_pc1_vs_pc2_loadings.png"), dpi=350)
+    plt.close()
+
+from sklearn.datasets import load_breast_cancer
+breast = load_breast_cancer()
+breast_data = breast.data
+breast_labels = breast.target
+
+labels = np.reshape(breast_labels,(569,1))
+final_breast_data = np.concatenate([breast_data,labels],axis=1)
+breast_dataset = pd.DataFrame(final_breast_data)
+features = breast.feature_names
+features_labels = np.append(features,'label')
+breast_dataset.columns = features_labels
+
+breast_dataset['label'].replace(0, 'Benign',inplace=True)
+breast_dataset['label'].replace(1, 'Malignant',inplace=True)
+
+from sklearn.preprocessing import StandardScaler
+x = breast_dataset.loc[:, features].values
+x = StandardScaler().fit_transform(x) # normalizing the features
+
+pca_bc, labels_bc, loadings_bc, finalDf_bc, principalComponents_bc, data_input_norm_bc = run_pca(rootdir,
+                                                                                                 breast_dataset,
+                                                                                                 norm=norm_method,
+                                                                                                 n_com=10)
+fig = plt.figure(figsize=(1.5, 1.5))
+ax = fig.add_subplot(1, 1, 1)
+ax.scatter(finalDf_bc.loc[:, 'pc1'], finalDf_bc.loc[:, 'pc2'], s=1)
+plt.savefig(os.path.join(rootdir, "breast_cancer_pc1_vs_pc2.png"), dpi=350)
+plt.close()
+
+fig = plt.figure(figsize=(1.5, 1.5))
+ax = fig.add_subplot(1, 1, 1)
+ax.scatter(loadings_bc.loc[:, 'pc1'], loadings_bc.loc[:, 'pc2'], s=1)
+plt.savefig(os.path.join(rootdir, "breast_cancer_pc1_vs_pc2_loadings.png"), dpi=350)
+plt.close()
+
+
+
+
+
+
+
+
 
 
