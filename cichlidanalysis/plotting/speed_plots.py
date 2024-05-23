@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.gridspec as grid_spec
 import datetime as dt
 from datetime import timedelta
+import matplotlib.patches as patches
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
 from cichlidanalysis.utils.timings import load_timings
@@ -456,6 +457,84 @@ def plot_speed_30m_mstd_figure(rootdir, fish_tracks_30m, change_times_d, ylim_ma
         plt.close()
     return
 
+
+def plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_30m, change_times_d, diel_guilds, cichlid_meta, temporal_col,
+                                    ylim_max=60):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+    date_form = DateFormatter("%H")
+
+    temporal_colors = diel_guilds.diel_guild.map(temporal_col)
+    temporal_colors = temporal_colors.set_axis(diel_guilds.species)
+
+    rect_x = 0  # x-coordinate of the bottom-left corner of the rectangle
+    rect_y = ylim_max  # y-coordinate of the bottom-left corner of the rectangle
+    rect_width = 20  # width of the rectangle
+    rect_height = 2  # height of the rectangle
+
+    for species_f in all_species:
+        # Note had to manually combine: Julmrk: ['Julidochromis marksmithi', 'Julidochromis regani']
+        # spd = fish_tracks_30m.loc[fish_tracks_30m.species.isin(['Julidochromis marksmithi', 'Julidochromis regani']), ['speed_mm', 'FishID', 'ts']]
+        # get speeds for each individual for a given species
+        spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+
+        # calculate ave and stdv
+        average = sp_spd.mean(axis=1)
+        stdv = sp_spd.std(axis=1)
+
+        # plt.figure(figsize=(2, 1))
+        plt.figure(figsize=(1.6, 0.9))
+        ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey', linewidth=0.5)
+        sns.lineplot(x=sp_spd.index, y=average, linewidth=0.5)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, ylim_max])
+        plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+        plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+
+        # get all names
+        sp_meta = cichlid_meta.loc[cichlid_meta.species_our_names == species_f, :]
+        plt.title(sp_meta.species_true.values[0] + ' (' + sp_meta.six_letter_name_Ronco.values[0] + ')', fontsize=SMALLEST_SIZE)
+
+        # add N number
+        species_num = spd.FishID.unique().shape[0]
+        ax.text(1.1, 70, species_num)
+
+        # add temporal guild coloured rectangle
+        temporal_c = temporal_colors.loc[temporal_colors.index == sp_meta.six_letter_name_Ronco.values[0]][0]
+        # rectangle = patches.Rectangle((rect_x, rect_y), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+        #                               facecolor=temporal_c)
+        rectangle = patches.Rectangle((rect_x, rect_y-rect_height-0.1), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+                                      facecolor=temporal_c)
+        ax.add_patch(rectangle)
+
+        # Decrease the offset for tick labels on all axes
+        ax.xaxis.labelpad = 0.5
+        ax.yaxis.labelpad = 0.5
+
+        # Adjust the offset for tick labels on all axes
+        ax.tick_params(axis='x', pad=0.5, length=2)
+        ax.tick_params(axis='y', pad=0.5, length=2)
+
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(0.5)
+        ax.tick_params(width=0.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}_ylim_{1}_N_and_temporal.pdf".format(species_f.replace(' ', '-'), ylim_max)), dpi=350)
+        plt.close()
+    return
 
 def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d, normal_days=4):
     # font sizes

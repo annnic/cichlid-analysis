@@ -313,11 +313,11 @@ def plot_factor_loading_variance_matrix(rootdir, data_input_norm, fish_tracks_bi
     max_val, min_val = 0.2, 0
     # Calculate the range of the data
     data_range = max(loadings_std['std_max-min_ratio']) - min(loadings_std['std_max-min_ratio'])
-
     # Normalize each data point
     loadings_std['std_max-min_ratio'] = [(x - min(loadings_std['std_max-min_ratio'])) / data_range * (max_val - min_val) + min_val for x in loadings_std['std_max-min_ratio']]
-
     values = all_std_df.std_mean / all_std_df.max_min_spd_dif
+
+
 
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6

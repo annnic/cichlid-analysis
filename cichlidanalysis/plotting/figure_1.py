@@ -305,10 +305,12 @@ def plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadi
 
 
 def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings, data_input_norm,  tribe_col,
-                                 sp_to_tribes):
+                                 sp_to_tribes, table_1, diel_guilds, temporal_col):
+    # Figure 1h
+
     # font sizes
     SMALL_SIZE = 6
-    MEDIUM_SIZE = 8
+    MEDIUM_SIZE = 7
     BIGGER_SIZE = 10
 
     matplotlib.rcParams.update({'font.size': SMALL_SIZE})
@@ -330,12 +332,16 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
     cols = 12
     n_plots = rows*cols
 
-    sp_tribes = pd.merge(pd.DataFrame(sorted_loadings.index).rename(columns={0: 'species'}), sp_to_tribes, on='species').drop_duplicates()
+    # sp_tribes = pd.merge(pd.DataFrame(sorted_loadings.index).rename(columns={0: 'species'}), sp_to_tribes, on='species').drop_duplicates()
+    sp_tribes = pd.merge(sorted_loadings.species, sp_to_tribes, on='species').drop_duplicates()
     row_colors = sp_tribes.tribe.map(tribe_col)
     row_colors = row_colors.set_axis(sp_tribes.species)
 
+    temporal_colors = diel_guilds.diel_guild.map(temporal_col)
+    temporal_colors = temporal_colors.set_axis(diel_guilds.species)
+
     rect_x = 0  # x-coordinate of the bottom-left corner of the rectangle
-    rect_y = span_max-1  # y-coordinate of the bottom-left corner of the rectangle
+    rect_y = span_max-0.9  # y-coordinate of the bottom-left corner of the rectangle
     rect_width = 20  # width of the rectangle
     rect_height = 0.25  # height of the rectangle
 
@@ -343,7 +349,7 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
     # Flatten the 2D array of subplots to make it easier to iterate
     axes = axes.flatten()
 
-    for species_n, species_name in enumerate(sorted_loadings.index):
+    for species_n, species_name in enumerate(sorted_loadings.species):
         # get speeds for each individual for a given species
         feature_i = fish_tracks_bin[fish_tracks_bin.species == species_name][['speed_mm', 'FishID', 'ts']]
         sp_feature = feature_i.pivot(columns='FishID', values='speed_mm', index='ts')
@@ -395,6 +401,18 @@ def plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime
         rectangle = patches.Rectangle((rect_x, rect_y), rect_width, rect_height, linewidth=0.5, edgecolor='none',
                                       facecolor=tribe_c)
         axes[species_n].add_patch(rectangle)
+
+        # add temporal guild coloured rectangle
+        temporal_c = temporal_colors.loc[temporal_colors.index == species_name][0]
+        # rectangle = patches.Rectangle((rect_x, rect_y), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+        #                               facecolor=temporal_c)
+        rectangle = patches.Rectangle((rect_x, rect_y-rect_height-0.1), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+                                      facecolor=temporal_c)
+        axes[species_n].add_patch(rectangle)
+
+        # add N number
+        species_num = table_1.loc[table_1.species == species_name, 'fish_N'].values[0]
+        axes[species_n].text(1, 3, species_num)
 
         if species_n % cols == 0 and species_n >= cols*(rows-1):
             axes[species_n].set_xlabel("Time (h)", fontsize=MEDIUM_SIZE)
