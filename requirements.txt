@@ -12,3 +12,4 @@ pytest
 statsmodels
 cmasher
 CosinorPy
+py-tps
