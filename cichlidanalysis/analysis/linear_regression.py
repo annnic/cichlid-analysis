@@ -23,7 +23,7 @@ def run_linear_reg(x, y):
     return model, r_sq
 
 
-def plt_lin_reg(rootdir, x, y, model, r_sq, label='', name_x=False, name_y=False, labels=False):
+def plt_lin_reg(rootdir, x, y, model, r_sq, label='', name_x=False, name_y=False, labels=False, figsize=(1.5,1.5)):
     """ Plot the scatter of two variables and add in the linear regression model, pearson's correlation and R2
 
     :param name_y: name for y axis
@@ -38,7 +38,7 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label='', name_x=False, name_y=False
     SMALL_SIZE = 6
     matplotlib.rcParams.update({'font.size': SMALL_SIZE})
 
-    fig = plt.figure(figsize=(1.5, 1.5))
+    fig = plt.figure(figsize=figsize)
     ax = sns.scatterplot(x, y, s=3)
     # x_intercept = (model.intercept_/model.coef_)[0]*-1
     # plt.plot([0, x_intercept], [model.intercept_, 0], color='k')
