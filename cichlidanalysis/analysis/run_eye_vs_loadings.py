@@ -48,22 +48,14 @@ if __name__ == '__main__':
     loadings = pd.read_csv(os.path.join(rootdir, "pca_loadings.csv"), sep=',')
     table_1 = pd.read_csv(os.path.join(rootdir, "table_1.csv"), sep=',')
     diel_guilds = pd.read_csv(os.path.join(rootdir, "diel_guilds.csv"), sep=',')
-    # voucher_key = pd.read_csv(os.path.join(rootdir, "01_specimen_voucher_key.csv"), sep=',')
-    # body_shape_tps =TPSFile.read_file(os.path.join(rootdir, "06_landmark_data_body_shape.tps"))
-
     tps_data = read_tps(os.path.join(rootdir, "06_landmark_data_body_shape.tps"))
-
-    # for specimen in tps_data:
-    #     print("Specimen ID:", specimen['id'])
-    #     print("Number of Landmarks:", specimen['num_landmarks'])
-    #     print("Landmarks:", specimen['landmarks'])
 
     # get the species for each specimen/entry of the tps file
     for specimen_n, specimen in enumerate(tps_data):
         if specimen_n == 0:
-            specimen_species = pd.DataFrame({'species': [specimen['id'].split('_')[1]]})
+            specimen_species = pd.DataFrame({'species': [specimen['id'][0:-4].split('_')[1]]})
         else:
-            specimen_species_i = pd.DataFrame({'species': [specimen['id'].split('_')[1]]})
+            specimen_species_i = pd.DataFrame({'species': [specimen['id'][0:-4].split('_')[1]]})
             specimen_species = pd.concat([specimen_species, specimen_species_i], ignore_index=True)
 
     first_species = True
@@ -120,12 +112,12 @@ if __name__ == '__main__':
                 # plt.close('all')
 
                 if first:
-                    species_measures = pd.DataFrame({'species': [specimen_data['id'].split('_')[1]], 'ID': specimen_data['id'],
+                    species_measures = pd.DataFrame({'species': [specimen_data['id'][0:-4].split('_')[1]], 'ID': specimen_data['id'],
                                                      'eye_size_h': eye_size_h, 'eye_size_v': eye_size_v, 'standard_len':
                                                          standard_len, 'body_area': body_area})
                     first = False
                 else:
-                    species_measures_i = pd.DataFrame({'species': [specimen_data['id'].split('_')[1]], 'ID': specimen_data['id'],
+                    species_measures_i = pd.DataFrame({'species': [specimen_data['id'][0:-4].split('_')[1]], 'ID': specimen_data['id'],
                                                      'eye_size_h': eye_size_h, 'eye_size_v': eye_size_v, 'standard_len':
                                                          standard_len, 'body_area': body_area})
                     species_measures = pd.concat([species_measures, species_measures_i], ignore_index=True)

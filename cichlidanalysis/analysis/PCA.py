@@ -231,10 +231,6 @@ if __name__ == '__main__':
 
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
-    ########### PCA matrix setup
-    # pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
-    # pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
-
     ########### other preprocessed/setups
     # # log transform
     # aves_ave_spd_log = np.log(aves_ave_spd)
@@ -275,14 +271,6 @@ if __name__ == '__main__':
     # save data:
     loadings_sp.to_csv(os.path.join(rootdir, 'pca_loadings.csv'), sep=',', index=False, encoding='utf-8')
 
-    # pc1 vs day_night_dif
-    model, r_sq = run_linear_reg(loadings_sp.day_night_dif.astype(float), loadings_sp.pc1)
-    plt_lin_reg(rootdir, loadings_sp.day_night_dif.astype(float), loadings_sp.pc1, model, r_sq)
-
-    # # pc2 vs peak
-    # model, r_sq = run_linear_reg(loadings_sp.peak.astype(float), loadings_sp.pc2)
-    # plt_lin_reg(rootdir, loadings_sp.peak.astype(float), loadings_sp.pc2, model, r_sq)
-
     plot_all_spd_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp)
 
     # Figure 1h
@@ -290,6 +278,12 @@ if __name__ == '__main__':
     diel_guilds = pd.read_csv(os.path.join(rootdir, "diel_guilds.csv"), sep=',')
     plot_all_spd_zscore_subplots(rootdir, fish_tracks_bin, change_times_datetime, loadings_sp, data_input_norm,
                                  tribe_col, sp_to_tribes, table_1, diel_guilds, temporal_col)
+
+    # extended supplemental table 1
+    extended_data_1 = pd.merge(table_1, loadings_sp.iloc[:, 0:3], on='species', how='inner')
+    extended_data_1 = extended_data_1.drop(extended_data_1.loc[extended_data_1.species_true == 'Julidochromis regani kipili'].index[0])
+    extended_data_1 = extended_data_1.reset_index(drop=True)
+    extended_data_1.to_csv(os.path.join(rootdir, 'extended_data_1.csv'), sep=',', index=True, encoding='utf-8')
 
     # ancestral reconstruction
     file = 'reconstructed_pcs.csv'
@@ -340,75 +334,3 @@ if __name__ == '__main__':
     # plt.legend()
     plt.savefig(os.path.join(rootdir, "PC1-10_LCA.png"), dpi=350)
     plt.close()
-
-
-    # # testing dif PCA dataset
-    # from sklearn import datasets, decomposition
-    #
-    # file = 'iris_dataset.csv'
-    # iris_df = pd.read_csv(os.path.join(rootdir, file), sep=',')
-    #
-    # np.random.seed(5)
-    #
-    # iris = datasets.load_iris()
-    # X = iris.data
-    # y = iris.target
-    #
-    # pca_iris, labels_iris, loadings_iris, finalDf_iris, principalComponents_iris, data_input_norm_iris = run_pca(rootdir, iris_df.iloc[:, 1:-2], norm=norm_method, n_com=3)
-    #
-    # fig = plt.figure(figsize=(1.5, 1.5))
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.scatter(finalDf_iris.loc[:, 'pc1'], finalDf_iris.loc[:, 'pc2'])
-    # plt.savefig(os.path.join(rootdir, "Iris_pc1_vs_pc2.png"), dpi=350)
-    # plt.close()
-    #
-    # fig = plt.figure(figsize=(1.5, 1.5))
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.scatter(loadings_iris.loc[:, 'pc1'], loadings_iris.loc[:, 'pc2'])
-    # plt.savefig(os.path.join(rootdir, "Iris_pc1_vs_pc2_loadings.png"), dpi=350)
-    # plt.close()
-    #
-    # from sklearn.datasets import load_breast_cancer
-    # breast = load_breast_cancer()
-    # breast_data = breast.data
-    # breast_labels = breast.target
-    #
-    # labels = np.reshape(breast_labels,(569,1))
-    # final_breast_data = np.concatenate([breast_data,labels],axis=1)
-    # breast_dataset = pd.DataFrame(final_breast_data)
-    # features = breast.feature_names
-    # features_labels = np.append(features,'label')
-    # breast_dataset.columns = features_labels
-    #
-    # breast_dataset['label'].replace(0, 'Benign',inplace=True)
-    # breast_dataset['label'].replace(1, 'Malignant',inplace=True)
-    #
-    # from sklearn.preprocessing import StandardScaler
-    # x = breast_dataset.loc[:, features].values
-    # x = StandardScaler().fit_transform(x) # normalizing the features
-    #
-    # pca_bc, labels_bc, loadings_bc, finalDf_bc, principalComponents_bc, data_input_norm_bc = run_pca(rootdir,
-    #                                                                                                  breast_dataset,
-    #                                                                                                  norm=norm_method,
-    #                                                                                                  n_com=10)
-    # fig = plt.figure(figsize=(1.5, 1.5))
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.scatter(finalDf_bc.loc[:, 'pc1'], finalDf_bc.loc[:, 'pc2'], s=1)
-    # plt.savefig(os.path.join(rootdir, "breast_cancer_pc1_vs_pc2.png"), dpi=350)
-    # plt.close()
-    #
-    # fig = plt.figure(figsize=(1.5, 1.5))
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.scatter(loadings_bc.loc[:, 'pc1'], loadings_bc.loc[:, 'pc2'], s=1)
-    # plt.savefig(os.path.join(rootdir, "breast_cancer_pc1_vs_pc2_loadings.png"), dpi=350)
-    # plt.close()
-
-
-
-
-
-
-
-
-
-
