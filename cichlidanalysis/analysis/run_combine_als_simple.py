@@ -118,6 +118,27 @@ def combine_binning(rootdir, binning_m=30):
     for species in all_species:
         fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
     print("Finished saving out {}min data".format(binning_m))
+
+    # get speed stats and save out individual fish plots
+    for fish in fish_tracks.FishID.unique():
+        bins = np.arange(0, 1000, 5)  # +5 to include the max value
+
+        plt.figure(figsize=(10, 6))
+        plt.hist(fish_tracks.loc[fish_tracks.FishID == fish, 'speed_mm'], bins=bins, edgecolor='black') #, log=True
+        plt.xlabel('Speed mm/s')
+        plt.ylabel('Frequency')
+        plt.xlim([0, 250])
+        plt.title('Histogram of Speed')
+        plt.axvline(MOVE_THRESH, color='r', label='15mm/s')
+        plt.axvline(0.25*meta.T.fish_length_mm[fish], color='k', linestyle='--', label='0.25 body lengths')
+        plt.legend()
+        plt.savefig(os.path.join(rootdir, "speed_hist_{}_{}.pdf".format(all_species[0].replace(' ', '-'), fish)), dpi=350)
+
+    # save out speed percentiles
+    percentile_values = fish_tracks.groupby('FishID')['speed_mm'].quantile([0.50, 0.90, 0.95, 0.98, 0.99, 0.995, 0.999]).unstack()
+    percentile_values_meta = pd.concat([percentile_values, meta.T], axis=1)
+    percentile_values_meta.to_csv(os.path.join(rootdir, "{}_spd_percentiles.csv".format(all_species[0])))
+
     return
 
 
@@ -180,7 +201,7 @@ if __name__ == '__main__':
 
     rootdir = select_dir_path()
 
-    combine_binning(rootdir, binning_m=10)
+    combine_binning(rootdir, binning_m=30)
 
     # fps = 10
     # smoothing_win_f = 60*10*fps

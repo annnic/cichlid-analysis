@@ -49,7 +49,7 @@ def background_vid(videofilepath, nth_frame, percentile):
     return background
 
 
-def update_background(percentile):
+def update_background(percentile, vid_type="*.mp4"):
     # Allows a user to select top directory
     root = Tk()
     root.withdraw()
@@ -58,7 +58,7 @@ def update_background(percentile):
     root.destroy()
 
     os.chdir(rootdir)
-    files = glob.glob("*.mp4")
+    files = glob.glob(vid_type)
     files.sort()
 
     for video in files:

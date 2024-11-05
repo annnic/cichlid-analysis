@@ -2,6 +2,7 @@ import os
 from tkinter import *
 from tkinter.filedialog import askdirectory
 import math
+import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +39,16 @@ def read_tps(file_path):
     return specimens
 
 
+def read_spd_percentiles(rootdir):
+    csv_files = glob.glob(os.path.join(os.path.join(rootdir, "_spd_percentiles"), '*.csv'))
+
+    df_list = [pd.read_csv(file) for file in csv_files]
+    spd_percent = pd.concat(df_list, ignore_index=True)
+    first_column = spd_percent.columns[0]
+    spd_percent.rename(columns={first_column: 'FishID'}, inplace=True)
+    return spd_percent
+
+
 if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
     root = Tk()
@@ -46,9 +57,14 @@ if __name__ == '__main__':
 
     # load data
     loadings = pd.read_csv(os.path.join(rootdir, "pca_loadings.csv"), sep=',')
+    cichlid_data = pd.read_csv(os.path.join(rootdir, "cichild_pc-loadings_eco-morph_rest_full.csv"), sep=',')
     table_1 = pd.read_csv(os.path.join(rootdir, "table_1.csv"), sep=',')
     diel_guilds = pd.read_csv(os.path.join(rootdir, "diel_guilds.csv"), sep=',')
     tps_data = read_tps(os.path.join(rootdir, "06_landmark_data_body_shape.tps"))
+    explore_data = pd.read_csv(os.path.join(rootdir, "exploratoryBehaviorMedians.txt"), sep='\t')
+    explore_data = explore_data.drop(columns=['species_id'])
+    explore_data = explore_data.rename(columns={'species_abb': 'species'})
+    spd_percent = read_spd_percentiles(rootdir)
 
     # get the species for each specimen/entry of the tps file
     for specimen_n, specimen in enumerate(tps_data):
@@ -59,13 +75,14 @@ if __name__ == '__main__':
             specimen_species = pd.concat([specimen_species, specimen_species_i], ignore_index=True)
 
     first_species = True
-    for species_n, species in enumerate(loadings.species):
+    for _, species in enumerate(loadings.species):
         specimens_for_species = specimen_species.loc[specimen_species.species == species]
 
         if not specimens_for_species.empty:
             first = True
             for specimen_n in specimens_for_species.index:
                 specimen_data = tps_data[specimen_n]
+                # note the -1 compared to the point numbers due to zero indexing
                 eye_west = specimen_data['landmarks'][16]
                 eye_east = specimen_data['landmarks'][18]
                 eye_size_h = math.sqrt((eye_west[0] - eye_east[0]) ** 2 + (eye_west[1] - eye_east[1]) ** 2)
@@ -88,28 +105,30 @@ if __name__ == '__main__':
                 hull = ConvexHull(points)
                 body_area = hull.area
 
-                ## plotting the points and hull
-                # input_points = np.array(specimen_data['landmarks'][0:-1])
-                # fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 3))
-                # for ax in (ax1, ax2):
-                #     ax.plot(input_points[:, 0], input_points[:, 1], '.', color='k')
-                #     if ax == ax1:
-                #         ax.set_title('Given points')
-                #     else:
-                #         ax.set_title('Convex hull')
-                #         for simplex in hull.simplices:
-                #             ax.plot(points[simplex, 0], points[simplex, 1], 'c')
-                #         ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec='r', color='none', lw=1,
-                #                 markersize=10)
-                #
-                #         # for point in input_points[16:20, :]:
-                #         ax.plot(input_points[16:20, 0], input_points[16:20, 1], 'o', mec='g', color='none', lw=1,
-                #                 markersize=10)
-                #     ax.set_xticks(range(10))
-                #
-                #     ax.set_yticks(range(10))
-                # # plt.savefig(os.path.join(rootdir, "convex_hull_2.png"))
-                # plt.close('all')
+                # plotting the points and hull
+                input_points = np.array(specimen_data['landmarks'][0:-1])
+                fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(10, 3))
+                for ax in (ax1, ax2):
+                    ax.plot(input_points[:, 0], input_points[:, 1], '.', color='k')
+                    if ax == ax1:
+                        ax.set_title('Given points')
+                    else:
+                        ax.set_title('Convex hull')
+                        for simplex in hull.simplices:
+                            ax.plot(points[simplex, 0], points[simplex, 1], 'c')
+                        ax.plot(points[hull.vertices, 0], points[hull.vertices, 1], 'o', mec='r', color='none', lw=1,
+                                markersize=6)
+
+                        # for point in input_points[16:20, :]:
+                        ax.plot(input_points[16:20, 0], input_points[16:20, 1], 'o', mec='g', color='none', lw=1,
+                                markersize=6)
+                    ax.set_xticks(range(10))
+
+                    ax.set_yticks(range(10))
+                    ax.set_xlim(0, 10)
+                    ax.set_ylim(-12, 0)
+                plt.savefig(os.path.join(rootdir, "convex_hull_{}.png".format(species)))
+                plt.close('all')
 
                 if first:
                     species_measures = pd.DataFrame({'species': [specimen_data['id'][0:-4].split('_')[1]], 'ID': specimen_data['id'],
@@ -138,11 +157,16 @@ if __name__ == '__main__':
     all_species_measures_mean.to_csv(os.path.join(rootdir, 'body_measurements.csv'), sep=',', index=False,
                                      encoding='utf-8')
 
-    combined_eye_loadings = pd.merge(loadings, all_species_measures_mean, on='species')
+    combined_eye_loadings = pd.merge(cichlid_data, all_species_measures_mean, on='species')
     combined_eye_loadings = combined_eye_loadings.set_index('species')
 
     combined_eye_loadings.reset_index().to_csv(os.path.join(rootdir, 'body_measurements.csv'), sep=',', index=False,
                                      encoding='utf-8')
+
+
+    # combine exploration data and loadings
+    combined_explore_loadings = pd.merge(cichlid_data, explore_data, on='species')
+    combined_explore_loadings = combined_explore_loadings.set_index('species')
 
     # pc1 vs day_night_dif
     model, r_sq = run_linear_reg(combined_eye_loadings.pc1, combined_eye_loadings.eye_v_by_sl)
@@ -164,4 +188,47 @@ if __name__ == '__main__':
     model, r_sq = run_linear_reg(combined_eye_loadings.standard_len, combined_eye_loadings.body_area)
     plt_lin_reg(rootdir, combined_eye_loadings.standard_len, combined_eye_loadings.body_area, model, r_sq,
                 name_x='standard_len', name_y='body_area', labels=True, figsize=(4, 4))
+
+
+    model, r_sq = run_linear_reg(combined_eye_loadings.standard_len, combined_eye_loadings.total_rest)
+    plt_lin_reg(rootdir, combined_eye_loadings.standard_len, combined_eye_loadings.total_rest, model, r_sq,
+                name_x='standard_len', name_y='total_rest', labels=True, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(combined_eye_loadings.body_area, combined_eye_loadings.total_rest)
+    plt_lin_reg(rootdir, combined_eye_loadings.body_area, combined_eye_loadings.total_rest, model, r_sq,
+                name_x='body_area', name_y='total_rest', labels=True, figsize=(4, 4))
+
+    # exploration
+    model, r_sq = run_linear_reg(combined_explore_loadings.pc1, combined_explore_loadings.median_exploration)
+    plt_lin_reg(rootdir, combined_explore_loadings.pc1, combined_explore_loadings.median_exploration, model, r_sq,
+                name_x='pc1 loading', name_y='exploration', labels=True, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(combined_explore_loadings.pc2, combined_explore_loadings.median_exploration)
+    plt_lin_reg(rootdir, combined_explore_loadings.pc2, combined_explore_loadings.median_exploration, model, r_sq,
+                name_x='pc2 loading', name_y='exploration', labels=True, figsize=(4, 4))
+
+
+    # speed vs body size
+
+    model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 2])
+    plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 2], model, r_sq,
+                name_x='fish_length_mm', name_y='90 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 3])
+    plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 3], model, r_sq,
+                name_x='fish_length_mm', name_y='95 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 4])
+    plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 4], model, r_sq,
+                name_x='fish_length_mm', name_y='98 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 5])
+    plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 5], model, r_sq,
+                name_x='fish_length_mm', name_y='99 percentile', labels=False, figsize=(4, 4))
+
+    spd_percent_sp = spd_percent.groupby('species').mean()
+    model, r_sq = run_linear_reg(spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5])
+    plt_lin_reg(rootdir, spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5], model, r_sq,
+                name_x='fish_length_mm_species', name_y='99 percentile', labels=True, figsize=(4, 4))
+
     plt.close('all')
