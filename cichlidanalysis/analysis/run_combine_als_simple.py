@@ -19,11 +19,9 @@ from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
+from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols, ave_daily_fish
 from cichlidanalysis.analysis.behavioural_state import define_rest
 from cichlidanalysis.analysis.processing import smooth_speed
-
-
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -53,11 +51,23 @@ def combine_binning(rootdir, binning_m=30):
     change_times_d, change_times_m, change_times_datetime, change_times_unit = \
         load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
 
+    MOVE_THRESH = 15
     fish_tracks['movement'] = np.nan
     for fish in fish_IDs:
         # threshold the speed_mm with 15mm/s
         fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = threshold_data(
             fish_tracks.loc[(fish_tracks.FishID == fish), "speed_mm"], MOVE_THRESH)
+
+    #### testing with MOVE_THRESH = 0.25 body lengths
+    fish_tracks['movement_bl'] = np.nan
+    for fish in fish_IDs:
+        MOVE_THRESH = 0.25 * meta.loc['fish_length_mm', fish]
+        # threshold the speed_mm with 15mm/s
+        fish_tracks.loc[(fish_tracks.FishID == fish), 'movement_bl'] = threshold_data(
+            fish_tracks.loc[(fish_tracks.FishID == fish), "speed_mm"], MOVE_THRESH)
+
+    fish_tracks["rest_bl"] = ((fish_tracks.groupby("FishID")['movement_bl'].transform(lambda s: s.rolling(fps *
+                              TIME_WINDOW_SEC).mean())) < FRACTION_THRESH) * 1
 
     # define behave states
     fish_tracks = define_rest(fish_tracks, TIME_WINDOW_SEC, FRACTION_THRESH)
@@ -114,10 +124,10 @@ def combine_binning(rootdir, binning_m=30):
     fish_tracks_bin.loc[fish_tracks_bin.time_of_day_m > change_times_m[3], 'daynight'] = "n"
     print("Finished adding bin species and daynight")
 
-    # save out downsampled als
-    for species in all_species:
-        fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
-    print("Finished saving out {}min data".format(binning_m))
+    # # save out downsampled als
+    # for species in all_species:
+    #     fish_tracks_bin.to_csv(os.path.join(rootdir, "{}_als_{}m.csv".format(species, binning_m)))
+    # print("Finished saving out {}min data".format(binning_m))
 
     # get speed stats and save out individual fish plots
     for fish in fish_tracks.FishID.unique():
@@ -139,6 +149,38 @@ def combine_binning(rootdir, binning_m=30):
     percentile_values_meta = pd.concat([percentile_values, meta.T], axis=1)
     percentile_values_meta.to_csv(os.path.join(rootdir, "{}_spd_percentiles.csv".format(all_species[0])))
 
+    # save out body length speed total rest for rest and rest_bl
+    column_names = ['total_rest', 'total_rest_bl']
+    df_f = pd.DataFrame([[np.nan, np.nan]], index=[fish_tracks.FishID.unique()],
+                        columns=column_names)
+
+    for fish in fish_tracks.FishID.unique():
+        _, _, df_f.loc[fish, 'total_rest'] = ave_daily_fish(fish_tracks_bin, fish, 'rest')
+        _, _,  df_f.loc[fish, 'total_rest_bl'] = ave_daily_fish(fish_tracks_bin, fish, 'rest_bl')
+
+        # plt.figure(figsize=(10, 6))
+        # plt.plot(fish_tracks_bin.loc[fish_tracks_bin.FishID == fish, 'movement']) #, log=True
+        # plt.plot(fish_tracks_bin.loc[fish_tracks_bin.FishID == fish, 'movement_bl'], c='r', linestyle='--') #, log=True
+        # plt.xlabel('Time')
+        # plt.ylabel('Movement')
+        # plt.savefig(os.path.join(rootdir, "movement_vs_movement_bl_30m_{}_{}.pdf".format(all_species[0].replace(' ', '-'), fish)), dpi=350)
+
+        # plt.figure(figsize=(10, 6))
+        # # subset = fish_tracks.loc[fish_tracks.FishID == fish]
+        # plt.plot(fish_tracks.loc[fish_tracks.FishID == fish, 'movement']) #, log=True
+        # plt.plot(fish_tracks.loc[fish_tracks.FishID == fish, 'movement_bl']+0.1, c='r', linestyle='--') #, log=True
+        # plt.xlabel('Time')
+        # plt.ylabel('Movement')
+        # plt.xlim([5497735, 5517835])
+        # plt.savefig(os.path.join(rootdir, "movement_vs_movement_bl_{}_{}.pdf".format(all_species[0].replace(' ', '-'), fish)), dpi=350)
+    plt.close('all')
+
+    # merge the dfs
+    df_f.index = df_f.index.set_names(['ID'])
+    df_f_r = df_f.reset_index()
+    meta_T_r = meta.T.reset_index()
+    feature_vector_meta = pd.concat([df_f_r, meta_T_r], axis=1)
+    feature_vector_meta.to_csv(os.path.join(rootdir, "{}_total_rest_bl.csv".format(all_species[0])))
     return
 
 

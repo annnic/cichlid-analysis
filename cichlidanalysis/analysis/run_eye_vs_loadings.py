@@ -49,6 +49,16 @@ def read_spd_percentiles(rootdir):
     return spd_percent
 
 
+def read_rest_bl(rootdir):
+    csv_files = glob.glob(os.path.join(os.path.join(rootdir, "rest_body_lengths"), '*_total_rest_bl.csv'))
+
+    df_list = [pd.read_csv(file) for file in csv_files]
+    rest_bl = pd.concat(df_list, ignore_index=True)
+    rest_bl.drop(columns=rest_bl.columns[0], axis=1, inplace=True)
+    rest_bl.rename(columns={'ID': 'FishID'}, inplace=True)
+    return rest_bl
+
+
 if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
     root = Tk()
@@ -65,6 +75,7 @@ if __name__ == '__main__':
     explore_data = explore_data.drop(columns=['species_id'])
     explore_data = explore_data.rename(columns={'species_abb': 'species'})
     spd_percent = read_spd_percentiles(rootdir)
+    rest_bl = read_rest_bl(rootdir)
 
     # get the species for each specimen/entry of the tps file
     for specimen_n, specimen in enumerate(tps_data):
@@ -209,6 +220,12 @@ if __name__ == '__main__':
 
 
     # speed vs body size
+    # note that FISH20200907_c6_r1_Neolamprologus-gracilis_sm has nan for speed, drop
+    spd_percent = spd_percent.dropna()
+
+    model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 1])
+    plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 1], model, r_sq,
+                name_x='fish_length_mm', name_y='50 percentile', labels=False, figsize=(4, 4))
 
     model, r_sq = run_linear_reg(spd_percent.fish_length_mm, spd_percent.iloc[:, 2])
     plt_lin_reg(rootdir, spd_percent.fish_length_mm, spd_percent.iloc[:, 2], model, r_sq,
@@ -229,6 +246,49 @@ if __name__ == '__main__':
     spd_percent_sp = spd_percent.groupby('species').mean()
     model, r_sq = run_linear_reg(spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5])
     plt_lin_reg(rootdir, spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5], model, r_sq,
-                name_x='fish_length_mm_species', name_y='99 percentile', labels=True, figsize=(4, 4))
+                name_x='fish_length_mm_species', name_y='995 percentile', labels=False, figsize=(4, 4))
 
+    model, r_sq = run_linear_reg(spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5])
+    plt_lin_reg(rootdir, spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 5], model, r_sq,
+                name_x='fish_length_mm_species', name_y='995 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 4])
+    plt_lin_reg(rootdir, spd_percent_sp.fish_length_mm, spd_percent_sp.iloc[:, 4], model, r_sq,
+                name_x='fish_length_mm_species', name_y='99 percentile', labels=False, figsize=(4, 4))
+
+
+    spd_percent['spd_norm'] = spd_percent.iloc[:, 5] / spd_percent.loc[:, 'fish_length_mm']
+    model, r_sq = run_linear_reg(spd_percent.spd_norm, spd_percent.iloc[:, 5])
+    plt_lin_reg(rootdir, spd_percent.spd_norm, spd_percent.iloc[:, 5], model, r_sq,
+                name_x='spd_norm', name_y='99 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent.spd_norm, spd_percent.fish_length_mm)
+    plt_lin_reg(rootdir, spd_percent.spd_norm, spd_percent.fish_length_mm, model, r_sq,
+                name_x='spd_norm', name_y='fish_length_mm', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent.iloc[:, 5], spd_percent.fish_length_mm)
+    plt_lin_reg(rootdir, spd_percent.iloc[:, 5], spd_percent.fish_length_mm, model, r_sq,
+                name_x='99 percentile', name_y='fish_length_mm', labels=False, figsize=(4, 4))
+
+
+    spd_percent_sp['spd_norm'] = spd_percent_sp.iloc[:, 5] / spd_percent_sp.loc[:, 'fish_length_mm']
+    model, r_sq = run_linear_reg(spd_percent_sp.spd_norm, spd_percent_sp.iloc[:, 5])
+    plt_lin_reg(rootdir, spd_percent_sp.spd_norm, spd_percent_sp.iloc[:, 5], model, r_sq,
+                name_x='spd_norm', name_y='995 percentile', labels=False, figsize=(4, 4))
+
+    model, r_sq = run_linear_reg(spd_percent_sp.spd_norm, spd_percent_sp.fish_length_mm)
+    plt_lin_reg(rootdir, spd_percent_sp.spd_norm, spd_percent_sp.fish_length_mm, model, r_sq,
+                name_x='spd_norm', name_y='fish_length_mm', labels=False, figsize=(4, 4))
+
+
+    # rest with 15mm/s or 0.25bl thresholds
+    rest_bl = rest_bl.dropna()
+    model, r_sq = run_linear_reg(rest_bl.total_rest, rest_bl.total_rest_bl)
+    plt_lin_reg(rootdir, rest_bl.total_rest, rest_bl.total_rest_bl, model, r_sq,
+                name_x='total_rest mm/s', name_y='total_rest 0.25 body lengths', labels=False, figsize=(4, 4))
+
+    rest_bl_sp = rest_bl.groupby('species').mean()
+    model, r_sq = run_linear_reg(rest_bl_sp.total_rest, rest_bl_sp.total_rest_bl)
+    plt_lin_reg(rootdir, rest_bl_sp.total_rest, rest_bl_sp.total_rest_bl, model, r_sq,
+                name_x='total_rest mm/s', name_y='total_rest 0.25 body lengths', labels=True, figsize=(4, 4))
     plt.close('all')
