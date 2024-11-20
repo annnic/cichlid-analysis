@@ -9,7 +9,7 @@ import cv2.cv2 as cv2
 import numpy as np
 
 from cichlidanalysis.tracking.rois import define_roi_still
-from cichlidanalysis.tracking.helpers import correct_tags
+from cichlidanalysis.tracking.helpers_pixels import correct_tags_pixel
 from cichlidanalysis.tracking.backgrounds import background_vid, update_background
 from cichlidanalysis.io.meta import extract_meta, load_yaml
 from cichlidanalysis.io.tracks import remove_tags, get_file_paths_from_nums
@@ -51,8 +51,7 @@ def pixel_delta(video_path, background_full, rois, threshold=5, display=True, ar
             break
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frameDelta_full = cv2.absdiff(background_full, gray)
-        frameDelta = frameDelta_full
-        image_thresholded = cv2.threshold(frameDelta, threshold, 255, cv2.THRESH_TOZERO)[1]
+        image_thresholded = cv2.threshold(frameDelta_full, threshold, 255, cv2.THRESH_TOZERO)[1]
 
         for roi in range(0, len(rois) - 1):
             # for the frame define an ROI and crop image
@@ -316,4 +315,4 @@ if __name__ == '__main__':
         # find cases where a movie has multiple csv files, add exclude tag to the ones from not today (date in file
         # names) and replace timestamps.
         date = datetime.datetime.now().strftime("%Y%m%d")
-        correct_tags(date, vid_dir)
+        correct_tags_pixel(date, vid_dir)
