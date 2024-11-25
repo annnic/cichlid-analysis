@@ -5,6 +5,15 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
+import matplotlib
+import seaborn as sns
+import matplotlib.cm as cm
+import matplotlib.gridspec as grid_spec
+import datetime as dt
+from datetime import timedelta
+import matplotlib.patches as patches
 
 from cichlidanalysis.io.meta import load_yaml
 from cichlidanalysis.io.tracks import extract_tracks_from_fld, adjust_old_time_ns
@@ -13,6 +22,7 @@ from cichlidanalysis.analysis.processing import interpolate_nan_streches, remove
 from cichlidanalysis.plotting.single_plots import filled_plot, plot_hist_2, image_minmax, sec_axis_h
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path, select_top_folder_path
 from cichlidanalysis.utils.species_names import get_roi_from_fish_id
+from cichlidanalysis.plotting.single_plots import fill_plot_ts
 
 
 # def pixels_add_timestamps(rootdir, orig_files_df, pixel_files_df):
@@ -23,6 +33,59 @@ from cichlidanalysis.utils.species_names import get_roi_from_fish_id
 #                 print("updating timestamps of {} and adding exclude tag to {}".format(new_f, orig_file))
 #                 update_csvs_pixels(os.path.join(rootdir, orig_file), os.path.join(rootdir, new_f))
 #     return
+
+def plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d, ylim_max=60):
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    date_form = DateFormatter("%H")
+
+    plt.figure(figsize=(2, 1))
+    ax = sns.lineplot(x=pixel_track_df_30min.ts, y=pixel_track_df_30min.d_pixels, linewidth=0.5)
+    ax.xaxis.set_major_locator(MultipleLocator(0.5))
+    ax.xaxis.set_major_formatter(date_form)
+
+    # if isinstance(tv_internal.iloc[-1], datetime.datetime):
+    #     td = tv_internal.iloc[-1] - tv_internal.iloc[0]
+    #     days = td.round('d')
+    #     if td > days:
+    #         days = days + '1d'
+    #     days_to_plot = days.days + 1
+    #
+    #     for day_n in range(days_to_plot):
+    #         ax.axvspan(0+day_n, change_times_unit[0]+day_n, color='lightblue', alpha=0.5, linewidth=0)
+    #         ax.axvspan(change_times_unit[0]+day_n, change_times_unit[1]+day_n, color='wheat', alpha=0.5, linewidth=0)
+    #         ax.axvspan(change_times_unit[2]+day_n, change_times_unit[3]+day_n, color='wheat', alpha=0.5, linewidth=0)
+    #         ax.axvspan(change_times_unit[3]+day_n, day_n+1, color='lightblue', alpha=0.5, linewidth=0)
+    #
+    # else:
+    #     print("wrong format, needs to be in datetime")
+    #     return
+    # ax.set_xlim([1, days_to_plot - 1])
+
+    fill_plot_ts(ax, change_times_d, pixel_track_df_30min.ts)
+    plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+    plt.ylabel("delta pixels", fontsize=SMALLEST_SIZE)
+
+    # Decrease the offset for tick labels on all axes
+    ax.xaxis.labelpad = 0.5
+    ax.yaxis.labelpad = 0.5
+
+    # Adjust the offset for tick labels on all axes
+    ax.tick_params(axis='x', pad=0.5, length=2)
+    ax.tick_params(axis='y', pad=0.5, length=2)
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "pixel_D.pdf"), dpi=350)
+    plt.close()
+    return
 
 
 def full_analysis(rootdir):
@@ -57,39 +120,43 @@ def full_analysis(rootdir):
     pixel_files_df = all_files_df.iloc[indices, :].sort_values(by='movie_n')
     orig_files_df = all_files_df.drop(indices).sort_values(by='movie_n')
 
-    correct_tags_pixel('20241113', rootdir)
-
     # load tracks
     pixel_track = np.empty([0, 2])
     for file in pixel_files_df.file_name:
         print(file)
         csv_file_path = os.path.join(rootdir, file)
-        pixel_track_single = pd.read_csv(csv_file_path, names=['frame', 'd_pixels'], header=None)
-        pixel_track_single['frame'] = pixel_track_single['frame'].astype(int)
+        pixel_track_single = pd.read_csv(csv_file_path, names=['ts', 'd_pixels'], header=None)
+        # change ts to datetime
+        pixel_track_single['ts'] = pd.to_datetime(pixel_track_single['ts'], unit='ns')
+        # change d_pixels to int
+        pixel_track_single['d_pixels'] = pixel_track_single['d_pixels'].astype(float)
         if len(pixel_track_single) > 0:
            pixel_track = np.append(pixel_track, pixel_track_single, axis=0)
-    pixel_track_df = pd.DataFrame(pixel_track, columns=['frame', 'd_pixels'])
+    pixel_track_df = pd.DataFrame(pixel_track, columns=['ts', 'd_pixels'])
+    pixel_track_df['d_pixels'] = pixel_track_df['d_pixels'].astype(float)
 
     track_full = np.empty([0, 4])
     for file in orig_files_df.file_name:
         print(file)
         csv_file_path = os.path.join(rootdir, file)
-        track_single = pd.read_csv(csv_file_path, names=['frame', 'x', 'y', 'area'], header=None)
-        track_single['frame'] = track_single['frame'].astype(int)
+        track_single = pd.read_csv(csv_file_path, names=['ts', 'x', 'y', 'area'], header=None)
+        # change ts to datetime
+        track_single['ts'] = pd.to_datetime(track_single['ts'], unit='ns')
         if len(track_single) > 0:
            track_full = np.append(track_full, track_single, axis=0)
-    track_full_df = pd.DataFrame(track_full, columns=['frame', 'x', 'y', 'area'])
+    track_full_df = pd.DataFrame(track_full, columns=['ts', 'x', 'y', 'area'])
 
-    # for old recordings update time (subtract 30min)
-    track_full[:, 0] = adjust_old_time_ns(FISH_ID, track_full[:, 0])
+    # for old recordings update time (subtract 30min) - need to check if this works on this dtype, this is automatically done in load_als_files
+    # track_full_df.iloc[:, 0] = adjust_old_time_ns(FISH_ID, track_full_df.iloc[:, 0])
+    # pixel_track_df.iloc[:, 0] = adjust_old_time_ns(FISH_ID, pixel_track_df.iloc[:, 0])
 
     # get starting time of video
     video_start_total_sec = get_start_time_of_video(rootdir)
 
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns, s and d
-    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, _, _ = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, change_times_datetime, change_times_unit = output_timings()
 
-    tv = set_time_vector(track_full, video_start_total_sec, config)
+    tv = set_time_vector(track_full_df.to_numpy(), video_start_total_sec, config)
 
     # correct to seconds
     NS_IN_SECONDS = 10 ** 9
@@ -100,8 +167,8 @@ def full_analysis(rootdir):
     for day in range(NUM_DAYS):
         tv_24h_sec[np.where(tv_24h_sec > day_ns / NS_IN_SECONDS)] -= day_ns / NS_IN_SECONDS
 
-    pixel_track_df_30min = pixel_track_df.groupby('FishID').resample('30T', on='ts').mean()
-
+    pixel_track_df_30min = pixel_track_df.resample('30T', on='ts').mean()
+    pixel_track_df_30min = pixel_track_df_30min.reset_index()
 
     d_pixels_sm = smooth_speed(pixel_track_df.d_pixels, win_size=10 * 60 * 1)
     fig1, ax1 = plt.subplots()
@@ -113,6 +180,15 @@ def full_analysis(rootdir):
     fig2, ax2 = filled_plot(tv[0: d_pixels_sm.shape[0]] / 10 ** 9 / 60 / 60, d_pixels_sm, change_times_h, day_ns / 10 ** 9 / 60 / 60)
     plt.ylabel("30min smoothed delta pixels")
     plt.savefig(os.path.join(rootdir, "{0}_30min_smoothed.png".format(FISH_ID)))
+
+    plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d)
+
+
+
+    fig2, ax2 = filled_plot(pixel_track_df_30min.index, pixel_track_df_30min.d_pixels, change_times_datetime, change_times_unit)
+    plt.ylabel("30min binned delta pixels")
+    plt.savefig(os.path.join(rootdir, "{0}_30min_smoothed.png".format(FISH_ID)))
+
 
     fig2, ax2 = filled_plot(tv[0: 1259965] / 10 ** 9 / 60 / 60, d_pixels_sm[0:-1], change_times_h, day_ns / 10 ** 9 / 60 / 60)
     sec_axis_h(ax2, video_start_total_sec)
