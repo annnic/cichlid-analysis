@@ -34,7 +34,7 @@ from cichlidanalysis.plotting.single_plots import fill_plot_ts
 #                 update_csvs_pixels(os.path.join(rootdir, orig_file), os.path.join(rootdir, new_f))
 #     return
 
-def plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d, ylim_max=60):
+def plot_pixel_30m(rootdir, pixel_track_df_30min, change_times_d, ylim_max=60):
     # font sizes
     SMALLEST_SIZE = 5
     SMALL_SIZE = 6
@@ -42,30 +42,14 @@ def plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d, yl
 
     date_form = DateFormatter("%H")
 
+    # adjusted_datetime = pixel_track_df_30min.tv - pd.DateOffset(months=2, days=10)
+
     plt.figure(figsize=(2, 1))
-    ax = sns.lineplot(x=pixel_track_df_30min.ts, y=pixel_track_df_30min.d_pixels, linewidth=0.5)
+    ax = sns.lineplot(x=pixel_track_df_30min.tv, y=pixel_track_df_30min.d_pixels, linewidth=0.5)
     ax.xaxis.set_major_locator(MultipleLocator(0.5))
     ax.xaxis.set_major_formatter(date_form)
 
-    # if isinstance(tv_internal.iloc[-1], datetime.datetime):
-    #     td = tv_internal.iloc[-1] - tv_internal.iloc[0]
-    #     days = td.round('d')
-    #     if td > days:
-    #         days = days + '1d'
-    #     days_to_plot = days.days + 1
-    #
-    #     for day_n in range(days_to_plot):
-    #         ax.axvspan(0+day_n, change_times_unit[0]+day_n, color='lightblue', alpha=0.5, linewidth=0)
-    #         ax.axvspan(change_times_unit[0]+day_n, change_times_unit[1]+day_n, color='wheat', alpha=0.5, linewidth=0)
-    #         ax.axvspan(change_times_unit[2]+day_n, change_times_unit[3]+day_n, color='wheat', alpha=0.5, linewidth=0)
-    #         ax.axvspan(change_times_unit[3]+day_n, day_n+1, color='lightblue', alpha=0.5, linewidth=0)
-    #
-    # else:
-    #     print("wrong format, needs to be in datetime")
-    #     return
-    # ax.set_xlim([1, days_to_plot - 1])
-
-    fill_plot_ts(ax, change_times_d, pixel_track_df_30min.ts)
+    fill_plot_ts(ax, change_times_d, pixel_track_df_30min.tv)
     plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
     plt.ylabel("delta pixels", fontsize=SMALLEST_SIZE)
 
@@ -84,6 +68,72 @@ def plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d, yl
     ax.spines['right'].set_visible(False)
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "pixel_D.pdf"), dpi=350)
+    plt.close()
+    return
+
+
+    fig2, ax2 = filled_plot(pixel_track_df_30min.ts, pixel_track_df_30min.d_pixels, change_times_h, day_ns / 10 ** 9 / 60 / 60)
+    plt.ylabel("average y position")
+    plt.title("Y position_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
+    plt.savefig(os.path.join(rootdir, "{0}_Y-position.png".format(FISH_ID)))
+    return
+
+
+def daily_ave_pixel_figure(rootdir, pixel_track_df_30min, change_times_m):
+    """ speed_mm (30m bins daily average) for each fish (individual lines)
+
+    :param rootdir:
+    :param pixel_track_df_30min:
+    :param change_times_unit:
+    """
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    date_form = DateFormatter("%M")
+
+    # get time of day so that the same tod for each fish can be averaged
+    pixel_track_df_30min = pixel_track_df_30min.dropna()  # occaisionally have NaTs in ts, this removes them.
+    mins = pixel_track_df_30min.tv.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
+    pixel_track_df_30min['time_of_day_m'] = mins
+
+    pixel_track_df_30min_ave = pixel_track_df_30min.groupby('time_of_day_m').mean()
+    pixel_track_df_30min_std = pixel_track_df_30min.groupby('time_of_day_m').std()
+
+    plt.figure(figsize=(1.2, 1.2))
+    ax = sns.lineplot(x=pixel_track_df_30min_ave.index, y=(pixel_track_df_30min_ave.d_pixels + pixel_track_df_30min_std.d_pixels),
+                      color='lightgrey', linewidth=0.5)
+    ax = sns.lineplot(x=pixel_track_df_30min_ave.index, y=(pixel_track_df_30min_ave.d_pixels - pixel_track_df_30min_std.d_pixels),
+                      color='lightgrey', linewidth=0.5)
+    ax = sns.lineplot(x=pixel_track_df_30min_ave.index, y=(pixel_track_df_30min_ave.d_pixels), linewidth=0.5)
+
+    ax.axvspan(0, change_times_m[0], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_m[0], change_times_m[1], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_m[2], change_times_m[3], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_m[3], 60*24, color='lightblue', alpha=0.5, linewidth=0)
+    ax.set_xlim([0, 60*24])
+    plt.xlabel("Time (h)", fontsize=SMALL_SIZE)
+    plt.ylabel("pixel delta", fontsize=SMALL_SIZE)
+
+    # Decrease the offset for tick labels on all axes
+    ax.xaxis.labelpad = 0.5
+    ax.yaxis.labelpad = 0.5
+
+    # Adjust the offset for tick labels on all axes
+    ax.tick_params(axis='x', pad=0.5, length=2)
+    ax.tick_params(axis='y', pad=0.5, length=2)
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax.xaxis.set_major_locator(MultipleLocator(60*6))
+    # ax.xaxis.set_major_formatter(date_form)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "pixels_30min_daily_ave.pdf"))
     plt.close()
     return
 
@@ -135,16 +185,16 @@ def full_analysis(rootdir):
     pixel_track_df = pd.DataFrame(pixel_track, columns=['ts', 'd_pixels'])
     pixel_track_df['d_pixels'] = pixel_track_df['d_pixels'].astype(float)
 
-    track_full = np.empty([0, 4])
-    for file in orig_files_df.file_name:
-        print(file)
-        csv_file_path = os.path.join(rootdir, file)
-        track_single = pd.read_csv(csv_file_path, names=['ts', 'x', 'y', 'area'], header=None)
-        # change ts to datetime
-        track_single['ts'] = pd.to_datetime(track_single['ts'], unit='ns')
-        if len(track_single) > 0:
-           track_full = np.append(track_full, track_single, axis=0)
-    track_full_df = pd.DataFrame(track_full, columns=['ts', 'x', 'y', 'area'])
+    # track_full = np.empty([0, 4])
+    # for file in orig_files_df.file_name:
+    #     print(file)
+    #     csv_file_path = os.path.join(rootdir, file)
+    #     track_single = pd.read_csv(csv_file_path, names=['ts', 'x', 'y', 'area'], header=None)
+    #     # change ts to datetime
+    #     track_single['ts'] = pd.to_datetime(track_single['ts'], unit='ns')
+    #     if len(track_single) > 0:
+    #        track_full = np.append(track_full, track_single, axis=0)
+    # track_full_df = pd.DataFrame(track_full, columns=['ts', 'x', 'y', 'area'])
 
     # for old recordings update time (subtract 30min) - need to check if this works on this dtype, this is automatically done in load_als_files
     # track_full_df.iloc[:, 0] = adjust_old_time_ns(FISH_ID, track_full_df.iloc[:, 0])
@@ -156,102 +206,36 @@ def full_analysis(rootdir):
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns, s and d
     change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, change_times_datetime, change_times_unit = output_timings()
 
-    tv = set_time_vector(track_full_df.to_numpy(), video_start_total_sec, config)
+    tv = set_time_vector(pixel_track_df.ts.to_numpy().reshape(-1, 1), video_start_total_sec, config)
+    tv = tv.astype('datetime64[ns]')
+    pixel_track_df.loc[:, 'tv'] = tv[0:pixel_track_df.shape[0]]
 
-    # correct to seconds
-    NS_IN_SECONDS = 10 ** 9
-    tv_sec = tv / NS_IN_SECONDS
-    tv_24h_sec = tv / NS_IN_SECONDS
+    # # correct to seconds
+    # NS_IN_SECONDS = 10 ** 9
+    # tv_sec = tv / NS_IN_SECONDS
+    # tv_24h_sec = tv / NS_IN_SECONDS
 
-    # get time vector with 24h time
-    for day in range(NUM_DAYS):
-        tv_24h_sec[np.where(tv_24h_sec > day_ns / NS_IN_SECONDS)] -= day_ns / NS_IN_SECONDS
-
-    pixel_track_df_30min = pixel_track_df.resample('30T', on='ts').mean()
-    pixel_track_df_30min = pixel_track_df_30min.reset_index()
-
-    d_pixels_sm = smooth_speed(pixel_track_df.d_pixels, win_size=10 * 60 * 1)
-    fig1, ax1 = plt.subplots()
-    plt.plot(d_pixels_sm)
-    plt.xlabel("time")
-    plt.ylabel("pixelD")
-    plt.savefig(os.path.join(rootdir, "{0}_pixels_raw.png".format(FISH_ID)))
-
-    fig2, ax2 = filled_plot(tv[0: d_pixels_sm.shape[0]] / 10 ** 9 / 60 / 60, d_pixels_sm, change_times_h, day_ns / 10 ** 9 / 60 / 60)
-    plt.ylabel("30min smoothed delta pixels")
-    plt.savefig(os.path.join(rootdir, "{0}_30min_smoothed.png".format(FISH_ID)))
-
-    plot_speed_30m_mstd_figure(rootdir, pixel_track_df_30min, change_times_d)
-
-
-
-    fig2, ax2 = filled_plot(pixel_track_df_30min.index, pixel_track_df_30min.d_pixels, change_times_datetime, change_times_unit)
-    plt.ylabel("30min binned delta pixels")
-    plt.savefig(os.path.join(rootdir, "{0}_30min_smoothed.png".format(FISH_ID)))
-
-
-    fig2, ax2 = filled_plot(tv[0: 1259965] / 10 ** 9 / 60 / 60, d_pixels_sm[0:-1], change_times_h, day_ns / 10 ** 9 / 60 / 60)
-    sec_axis_h(ax2, video_start_total_sec)
-    plt.xlabel("Time (h)")
-    plt.ylabel("Speed mm/s")
-    plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
-    # ax2.set_ylim(0, 60)
-    plt.savefig(os.path.join(rootdir, "{0}_speed_30m_spt.png".format(FISH_ID)))
-    plt.close()
-
-
-
-    track_meta = {'ID': FISH_ID, 'species': meta["species"], 'sex': meta["sex"],
-                  'fish_length_mm': meta["fish_length_mm"], 'mm_per_pixel': config["mm_per_pixel"]}
-    meta_df = pd.DataFrame(track_meta, columns=['ID', 'species', 'sex', 'fish_length_mm', 'mm_per_pixel'], index=[0])
-    meta_df.to_csv(os.path.join(rootdir, "{0}_meta.csv".format(FISH_ID)))
-
-    # start from midnight (so they all start at the same time) - need to adjust "midnight" depending on if ts were
-    # adjusted for 30min shift (all recordings before 20201127).
     if int(FISH_ID[4:12]) < 20201127:
         thirty_min_ns = 30 * 60 * 1000000000
         adjusted_day_ns = day_ns - thirty_min_ns
         print("old recording from before 20201127 so adjusting back time before saving out als")
     else:
         adjusted_day_ns = day_ns
+    adjusted_day_ns = np.datetime64(adjusted_day_ns, 'ns')
+    tv = tv.astype('datetime64[ns]')
 
-    midnight = np.max(np.where(tv < adjusted_day_ns))
+    # Drop rows where 'tv' is below adjusted_day_ns (first midnight)
+    pixel_track_df = pixel_track_df[pixel_track_df['tv'] >= adjusted_day_ns]
 
-    track_als = np.vstack((tv[midnight:-1], speed_sm_mm_ps[midnight:, 0], x_nt[midnight:-1], y_nt[midnight:-1]))
+    pixel_track_df_30min = pixel_track_df.resample('30T', on='tv').mean()
+    pixel_track_df_30min = pixel_track_df_30min.reset_index()
 
-    filename = os.path.join(rootdir, "{}_als.csv".format(FISH_ID))
-    als_df = pd.DataFrame(track_als.T, columns=['tv_ns', 'speed_mm', 'x_nt', 'y_nt'],
-                          index=pd.Index(np.arange(0, len(speed_sm_tbl_ps[midnight:]))))
-    als_df.to_csv(filename, encoding='utf-8-sig', index=False)
-    plt.close('all')
+    plot_pixel_30m(rootdir, pixel_track_df_30min, change_times_d)
 
-    # test if saving file worked (issues with null bytes)
-    try:
-        data_b = pd.read_csv(filename, sep=',')
-        # check if all data is as expected
-        if data_b.shape != als_df.shape:
-            # try  to save again using np
-            np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
-            data_b = pd.read_csv(filename, sep=',')
-            if data_b.shape != als_df.shape:
-                raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
-            else:
-                print("could save as np")
-    except pd.errors.ParserError:
-        print("problem parsing, probably null bytes error, trying to save with numpy instead ")
-        np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
-        data_b = pd.read_csv(filename, sep=',')
-        if data_b.shape != als_df.shape:
-            raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
-        else:
-            print("could save as np")
+    # get daily average
+    daily_ave_pixel_figure(rootdir, pixel_track_df_30min, change_times_m)
 
-    try:
-        data_b = pd.read_csv(filename, sep=',')
-    except pd.errors.ParserError:
-        print("still couldn't save it properly, report this!")
-        os.remove(filename)
-        return
+    return
 
 
 if __name__ == '__main__':

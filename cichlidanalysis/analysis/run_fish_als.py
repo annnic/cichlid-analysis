@@ -43,6 +43,7 @@ def full_analysis(rootdir):
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns, s and d
     change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, _, _ = output_timings()
 
+    # this is not time adjusted
     tv = set_time_vector(track_full, video_start_total_sec, config)
 
     # correct to seconds
@@ -297,6 +298,7 @@ def full_analysis(rootdir):
     meta_df = pd.DataFrame(track_meta, columns=['ID', 'species', 'sex', 'fish_length_mm', 'mm_per_pixel'], index=[0])
     meta_df.to_csv(os.path.join(rootdir, "{0}_meta.csv".format(FISH_ID)))
 
+    # need to double check this!
     # start from midnight (so they all start at the same time) - need to adjust "midnight" depending on if ts were
     # adjusted for 30min shift (all recordings before 20201127).
     if int(FISH_ID[4:12]) < 20201127:

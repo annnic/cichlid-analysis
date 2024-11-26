@@ -164,6 +164,7 @@ def set_time_vector(track_full, video_start_total_sec, config):
         tv = track_full[:, 0] - track_full[0, 0] + video_start_total_sec * NS_IN_SECONDS
     return tv
 
+
 def load_timings_14_8(vector_length):
     """ Get all of the required time parameters. All data is with fps = 10 (may change in future
 
