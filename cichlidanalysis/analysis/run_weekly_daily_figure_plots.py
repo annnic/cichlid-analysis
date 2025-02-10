@@ -8,7 +8,7 @@ from cichlidanalysis.utils.timings import load_timings, load_timings_14_8
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_bin_als_files
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure_info, weekly_individual_figure
-from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure
+from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure, daily_ave_spd_figure_night_centred
 from cichlidanalysis.io.io_ecological_measures import get_meta_paths
 
 if __name__ == '__main__':
@@ -35,11 +35,11 @@ if __name__ == '__main__':
     fish_tracks_bin['ts'] = pd.to_datetime(fish_tracks_bin['ts'])
 
     # plot weekly plot
-    plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_bin, change_times_d, diel_guilds, cichlid_meta, temporal_col,
-                                    ylim_max=60)
+    # plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_bin, change_times_d, diel_guilds, cichlid_meta, temporal_col,
+    #                                 ylim_max=60)
 
     # plot all individuals for each species
-    weekly_individual_figure(rootdir, 'speed_mm', fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
+    # weekly_individual_figure(rootdir, 'speed_mm', fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
 
     # plot daily plot
     all_species = fish_tracks_bin['species'].unique()
@@ -54,5 +54,6 @@ if __name__ == '__main__':
         sp_spd_ave_std = sp_spd_ave.std(axis=1)
 
         # make the plots
-        daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit)
-        daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=100)
+        daily_ave_spd_figure_night_centred(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit)
+        # daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit)
+        # daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=100)

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import ConvexHull
 
-from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
+from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg, plt_lin_reg_rest_figure
 
 
 def read_tps(file_path):
@@ -287,8 +287,15 @@ if __name__ == '__main__':
     plt_lin_reg(rootdir, rest_bl.total_rest, rest_bl.total_rest_bl, model, r_sq,
                 name_x='total_rest mm/s', name_y='total_rest 0.25 body lengths', labels=False, figsize=(4, 4))
 
+    plt_lin_reg_rest_figure(rootdir, rest_bl.total_rest, rest_bl.total_rest_bl, model, r_sq,
+                name_x='total_rest mm/s', name_y='total_rest 0.25 body lengths', labels=False, figsize=(3, 3))
+
+    # grouped by species
     rest_bl_sp = rest_bl.groupby('species').mean()
     model, r_sq = run_linear_reg(rest_bl_sp.total_rest, rest_bl_sp.total_rest_bl)
     plt_lin_reg(rootdir, rest_bl_sp.total_rest, rest_bl_sp.total_rest_bl, model, r_sq,
                 name_x='total_rest mm/s', name_y='total_rest 0.25 body lengths', labels=True, figsize=(4, 4))
     plt.close('all')
+
+    # rest definition figure extendend figure 2e
+
