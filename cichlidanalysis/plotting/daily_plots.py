@@ -309,7 +309,7 @@ def daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_
     return
 
 
-def daily_ave_spd_figure_sex(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=60):
+def daily_ave_spd_figure_sex(rootdir, sp_spd_daily, sp_spd_daily_std, species_f, change_times_unit, fish_num, ymax=60):
     """ speed_mm (30m bins daily average) for each fish (individual lines)
 
     :param sp_spd_ave:
@@ -326,13 +326,15 @@ def daily_ave_spd_figure_sex(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, cha
 
     date_form = DateFormatter("%H")
 
-    daily_speed = sp_spd_ave.mean(axis=1)
+    colours = {'male': 'cornflowerblue', 'female': 'mediumorchid', 'unknown': 'gold', 'm': 'cornflowerblue',
+               'f': 'mediumorchid', 'u': 'gold'}
 
     # speed_mm (30m bins daily average) for each fish (mean  +- std)
     plt.figure(figsize=(1.2, 1.2))
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed + sp_spd_ave_std), color='lightgrey', linewidth=0.5)
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed - sp_spd_ave_std), color='lightgrey', linewidth=0.5)
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed), linewidth=0.5)
+    for sex in sp_spd_daily.columns:
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex] + sp_spd_daily_std.loc[:, sex]), color=colours[sex], linewidth=0.5, alpha=0.35)
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex] - sp_spd_daily_std.loc[:, sex]), color=colours[sex], linewidth=0.5, alpha=0.35)
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex]),  color=colours[sex], linewidth=0.75)
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -343,6 +345,11 @@ def daily_ave_spd_figure_sex(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, cha
     plt.xlabel("Time (h)", fontsize=SMALL_SIZE)
     plt.ylabel("Speed (mm/s)", fontsize=SMALL_SIZE)
     plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+    # add N for each
+    # add N number
+    for i, sex in enumerate(('m', 'f', 'u')):
+        ax.text(1, ymax-10-i*10, sex + ': ' + str(fish_num[sex]), fontsize=SMALLEST_SIZE, color=colours[sex])
 
     # Decrease the offset for tick labels on all axes
     ax.xaxis.labelpad = 0.5

@@ -12,6 +12,19 @@ from cichlidanalysis.plotting.speed_plots import plot_speed_30m_mstd_figure_info
 from cichlidanalysis.plotting.daily_plots import daily_ave_spd_figure, daily_ave_spd_figure_night_centred, daily_ave_spd_figure_sex
 from cichlidanalysis.io.io_ecological_measures import get_meta_paths
 
+
+def get_mean_std(sp_spd_all, sp_spd_subset):
+    if not sp_spd_subset.empty:
+        sp_spd_subset_ave = sp_spd_subset.groupby('time_of_day').mean()
+        daily_speed_subset = sp_spd_subset_ave.mean(axis=1)
+        sp_spd_subset_ave_std = sp_spd_subset_ave.std(axis=1)
+    else:
+        sp_spd_ave_all = sp_spd_all.groupby('time_of_day').mean()
+        daily_speed_subset = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
+        sp_spd_subset_ave_std = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
+    return daily_speed_subset, sp_spd_subset_ave_std
+
+
 if __name__ == '__main__':
     # plots the weekly mean +- stdev plots for extended figure 1+2
     rootdir = select_dir_path()
@@ -51,6 +64,10 @@ if __name__ == '__main__':
         spd_female = spd.loc[spd.sex == 'f']
         spd_unknown = spd.loc[spd.sex == 'u']
 
+        fish_num = dict()
+        for sex in ('m', 'f', 'u'):
+            fish_num[sex] = len(spd.loc[spd.sex == sex].loc[:, 'FishID'].unique())
+
         sp_spd_all = spd.pivot(columns='FishID', values='speed_mm', index='ts')
         sp_spd_male = spd_male.pivot(columns='FishID', values='speed_mm', index='ts')
         sp_spd_female = spd_female.pivot(columns='FishID', values='speed_mm', index='ts')
@@ -62,51 +79,24 @@ if __name__ == '__main__':
         sp_spd_female['time_of_day'] = sp_spd_female.apply(lambda row: str(row.name)[11:16], axis=1)
         sp_spd_unknown['time_of_day'] = sp_spd_unknown.apply(lambda row: str(row.name)[11:16], axis=1)
 
+        daily_speed_male, sp_spd_ave_std_male = get_mean_std(sp_spd_all, sp_spd_male)
+        daily_speed_female, sp_spd_ave_std_female = get_mean_std(sp_spd_all, sp_spd_female)
+        daily_speed_unknown, sp_spd_ave_std_unknown = get_mean_std(sp_spd_all, sp_spd_unknown)
 
-        def get_mean_std(sp_spd_all, sp_spd_subset):
-            if not sp_spd_subset.empty:
-                sp_spd_subset_ave = sp_spd_subset.groupby('time_of_day').mean()
-                daily_speed_subset = sp_spd_subset_ave.mean(axis=1)
-                sp_spd_subset_ave_std = sp_spd_subset_ave.std(axis=1)
-            else:
-                sp_spd_ave_all = sp_spd_all.groupby('time_of_day').mean()
-                daily_speed_subset = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-                sp_spd_ave_std_subset = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-            return daily_speed_subset, sp_spd_ave_std_subset
-
-
-        if not sp_spd_male.empty:
-            sp_spd_ave_male = sp_spd_male.groupby('time_of_day').mean()
-            sp_spd_ave_std_male = sp_spd_ave_male.std(axis=1)
-            daily_speed_male = sp_spd_ave_male.mean(axis=1)
-        else:
-            sp_spd_ave_all = sp_spd_all.groupby('time_of_day').mean()
-            sp_spd_ave_male = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-            sp_spd_ave_std_male = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-
-        if not sp_spd_female.empty:
-            sp_spd_ave_female = sp_spd_female.groupby('time_of_day').mean()
-            sp_spd_ave_std_female = sp_spd_ave_female.std(axis=1)
-        else:
-            sp_spd_ave_all = sp_spd_all.groupby('time_of_day').mean()
-            sp_spd_ave_female = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-            sp_spd_ave_std_female = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-
-        if not sp_spd_unknown.empty:
-            sp_spd_ave_unknown = sp_spd_unknown.groupby('time_of_day').mean()
-            sp_spd_ave_std_unknown = sp_spd_ave_unknown.std(axis=1)
-        else:
-            sp_spd_ave_all = sp_spd_all.groupby('time_of_day').mean()
-            sp_spd_ave_unknown = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-            sp_spd_ave_std_unknown = pd.Series(data=np.nan, index=sp_spd_ave_all.index)
-
-        sp_spd_ave = pd.DataFrame({
-            'male': sp_spd_ave_male,
-            'female': sp_spd_ave_female,
-            'unknown': sp_spd_ave_unknown
+        sp_spd_daily = pd.DataFrame({
+            'male': daily_speed_male,
+            'female': daily_speed_female,
+            'unknown': daily_speed_unknown
         })
 
-        daily_ave_spd_figure_sex(rootdir, sp_spd_ave, sp_spd_ave_std_male, species_f, change_times_unit, ymax=100)
+        sp_spd_daily_std = pd.DataFrame({
+            'male': sp_spd_ave_std_male,
+            'female': sp_spd_ave_std_female,
+            'unknown': sp_spd_ave_std_unknown
+        })
+
+        # plot everything with colours
+        daily_ave_spd_figure_sex(rootdir, sp_spd_daily, sp_spd_daily_std, species_f, change_times_unit, fish_num, ymax=100)
 
     # plot daily plot
     all_species = fish_tracks_bin['species'].unique()
