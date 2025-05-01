@@ -537,6 +537,7 @@ def plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_30m, change_times_d, di
         plt.close()
     return
 
+
 def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d, normal_days=4):
     # font sizes
     SMALLEST_SIZE = 5
