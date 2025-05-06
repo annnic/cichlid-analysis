@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     # plot weekly plot
     # plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_bin, change_times_d, diel_guilds, cichlid_meta, temporal_col,
-    #                                 ylim_max=60)
+    #                                 ylim_max=85)
 
     # plot all individuals for each species
     # weekly_individual_figure(rootdir, 'speed_mm', fish_tracks_bin, change_times_m, bin_size_min=bin_size_min)
@@ -58,8 +58,12 @@ if __name__ == '__main__':
     # plot daily plot separated by sex
     all_species = fish_tracks_bin['species'].unique()
     for species_f in all_species:
+
         # ### speed ###
         spd = fish_tracks_bin[fish_tracks_bin.species == species_f][['speed_mm', 'FishID', 'ts', 'sex']]
+        # Note had to manually combine: Julmrk: ['Julidochromis marksmithi', 'Julidochromis regani']
+        # spd = fish_tracks_bin.loc[fish_tracks_bin.species.isin(['Julidochromis marksmithi', 'Julidochromis regani']), ['speed_mm', 'FishID', 'ts', 'sex']]
+
         spd_male = spd.loc[spd.sex == 'm']
         spd_female = spd.loc[spd.sex == 'f']
         spd_unknown = spd.loc[spd.sex == 'u']
@@ -96,7 +100,8 @@ if __name__ == '__main__':
         })
 
         # plot everything with colours
-        daily_ave_spd_figure_sex(rootdir, sp_spd_daily, sp_spd_daily_std, species_f, change_times_unit, fish_num, ymax=100)
+        daily_ave_spd_figure_sex(rootdir, sp_spd_daily, sp_spd_daily_std, species_f, change_times_unit, fish_num,
+                                 diel_guilds, cichlid_meta, temporal_col, ymax=100)
 
     # plot daily plot
     all_species = fish_tracks_bin['species'].unique()
