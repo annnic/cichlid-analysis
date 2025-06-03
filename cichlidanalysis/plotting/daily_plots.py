@@ -1,11 +1,13 @@
 import os
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator)
 import matplotlib
 import seaborn as sns
 from matplotlib.dates import DateFormatter
+import matplotlib.patches as patches
 
 
 def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_unit):
@@ -210,6 +212,7 @@ def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
         daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_unit)
         daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit)
         daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=100)
+        daily_ave_spd_figure_sex(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=100)
 
         # ### movement ###
         move = fish_tracks_30m_i[fish_tracks_30m_i.species == species_f][['movement', 'FishID', 'ts']]
@@ -306,6 +309,146 @@ def daily_ave_spd_figure(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_
     plt.close()
     return
 
+
+def daily_ave_spd_figure_sex(rootdir, sp_spd_daily, sp_spd_daily_std, species_f, change_times_unit, fish_num,
+                             diel_guilds, cichlid_meta, temporal_col, ymax=60):
+    """ speed_mm (30m bins daily average) for each fish (individual lines) with sex split and coloured by diel guild
+    """
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALLEST_SIZE})
+
+    date_form = DateFormatter("%H")
+
+    colours = {'male': 'cornflowerblue', 'female': 'mediumorchid', 'unknown': 'gold', 'm': 'cornflowerblue',
+               'f': 'mediumorchid', 'u': 'gold'}
+
+    temporal_colors = diel_guilds.diel_guild.map(temporal_col)
+    temporal_colors = temporal_colors.set_axis(diel_guilds.species)
+
+    rect_x = 0  # x-coordinate of the bottom-left corner of the rectangle
+    rect_y = ymax  # y-coordinate of the bottom-left corner of the rectangle
+    rect_width = 48  # width of the rectangle
+    rect_height = 2  # height of the rectangle
+
+    # speed_mm (30m bins daily average) for each fish (mean  +- std)
+    plt.figure(figsize=(1.2, 1.2))
+    for sex in sp_spd_daily.columns:
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex] + sp_spd_daily_std.loc[:, sex]), color=colours[sex], linewidth=0.5, alpha=0.35)
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex] - sp_spd_daily_std.loc[:, sex]), color=colours[sex], linewidth=0.5, alpha=0.35)
+        ax = sns.lineplot(x=sp_spd_daily.index, y=(sp_spd_daily.loc[:, sex]),  color=colours[sex], linewidth=0.75)
+
+    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
+    ax.set_ylim([0, ymax])
+    ax.set_xlim([0, 24 * 2])
+    plt.xlabel("Time (h)", fontsize=SMALLEST_SIZE)
+    plt.ylabel("Speed (mm/s)", fontsize=SMALLEST_SIZE)
+
+    # get all names
+    sp_meta = cichlid_meta.loc[cichlid_meta.species_our_names == species_f, :]
+    plt.title(sp_meta.species_true.values[0] + '\n' + ' (' + sp_meta.six_letter_name_Ronco.values[0] + ')', fontsize=SMALLEST_SIZE)
+
+    # add N for each
+    # add N number
+    for i, sex in enumerate(('m', 'f', 'u')):
+        ax.text(1, ymax-12-i*10, sex + ': ' + str(fish_num[sex]), fontsize=SMALLEST_SIZE, color=colours[sex])
+
+    # add temporal guild coloured rectangle
+    temporal_c = temporal_colors.loc[temporal_colors.index == sp_meta.six_letter_name_Ronco.values[0]][0]
+    # rectangle = patches.Rectangle((rect_x, rect_y), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+    #                               facecolor=temporal_c)
+    rectangle = patches.Rectangle((rect_x, rect_y-rect_height-0.1), rect_width, rect_height, linewidth=0.5, edgecolor='none',
+                                  facecolor=temporal_c)
+    ax.add_patch(rectangle)
+
+    # Decrease the offset for tick labels on all axes
+    ax.xaxis.labelpad = 0.5
+    ax.yaxis.labelpad = 0.5
+
+    # Adjust the offset for tick labels on all axes
+    ax.tick_params(axis='x', pad=0.5, length=2)
+    ax.tick_params(axis='y', pad=0.5, length=2)
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax.xaxis.set_major_locator(MultipleLocator(24))
+    # ax.xaxis.set_major_formatter(date_form)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "speed_30min_ave_ave-stdev_sex_figure_{0}_{1}.pdf".format(species_f.replace(' ', '-'),
+                                                                                            ymax)))
+    plt.close()
+    return
+
+
+def daily_ave_spd_figure_night_centred(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=60):
+    """ speed_mm (30m bins daily average) for each fish (individual lines), but now night centered
+
+    :param sp_spd_ave:
+    :param sp_spd_ave_std:
+    :param rootdir:
+    :param species_f:
+    :param change_times_unit:
+    :return: daily_speed:
+    """
+    # font sizes
+    SMALLEST_SIZE = 5
+    SMALL_SIZE = 6
+    matplotlib.rcParams.update({'font.size': SMALL_SIZE})
+
+    date_form = DateFormatter("%H")
+
+    # move the first rows to the end to centre midnight
+    sp_spd_ave_midnight = pd.concat([sp_spd_ave.iloc[24:], sp_spd_ave.iloc[:24]])
+    sp_spd_ave_std_midnight = pd.concat([sp_spd_ave_std.iloc[24:], sp_spd_ave_std.iloc[:24]])
+    daily_speed_midnight = sp_spd_ave_midnight.mean(axis=1)
+
+    # speed_mm (30m bins daily average) for each fish (mean  +- std)
+    plt.figure(figsize=(1.2, 1.2))
+    ax = sns.lineplot(x=sp_spd_ave_midnight.index, y=(daily_speed_midnight + sp_spd_ave_std_midnight), color='lightgrey', linewidth=0.5)
+    ax = sns.lineplot(x=sp_spd_ave_midnight.index, y=(daily_speed_midnight - sp_spd_ave_std_midnight), color='lightgrey', linewidth=0.5)
+    ax = sns.lineplot(x=sp_spd_ave_midnight.index, y=(daily_speed_midnight), linewidth=0.5)
+
+    # changed the plotting
+    # ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[1], change_times_unit[2], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
+    # ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
+    # ax.set_ylim([0, ymax])
+    ax.set_xlim([0, 24 * 2])
+    plt.xlabel("Time (h)", fontsize=SMALL_SIZE)
+    plt.ylabel("Speed (mm/s)", fontsize=SMALL_SIZE)
+    plt.title(species_f, fontsize=SMALLEST_SIZE)
+
+    # Decrease the offset for tick labels on all axes
+    ax.xaxis.labelpad = 0.5
+    ax.yaxis.labelpad = 0.5
+
+    # Adjust the offset for tick labels on all axes
+    ax.tick_params(axis='x', pad=0.5, length=2)
+    ax.tick_params(axis='y', pad=0.5, length=2)
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(0.5)
+    ax.tick_params(width=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax.xaxis.set_major_locator(MultipleLocator(24))
+    # ax.xaxis.set_major_formatter(date_form)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "speed_30min_ave_ave-stdev_figure_{0}_{1}_midnight_ylim_adapt.pdf".format(species_f.replace(' ', '-'),
+                                                                                            ymax)))
+    plt.close()
+    return
 
 def daily_ave_spd_figure_timed_perturb(rootdir, sp_spd_ave, sp_spd_ave_std, species_f, change_times_unit, ymax=60,
                                        label='_', perturb_timing=[0, 0]):

@@ -532,9 +532,11 @@ def plot_speed_30m_mstd_figure_info(rootdir, fish_tracks_30m, change_times_d, di
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         plt.tight_layout()
+        # Supplementary figure 1
         plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev_figure_{0}_ylim_{1}_N_and_temporal.pdf".format(species_f.replace(' ', '-'), ylim_max)), dpi=350)
         plt.close()
     return
+
 
 def plot_speed_30m_mstd_figure_light_perturb(rootdir, fish_tracks_30m, change_times_d, normal_days=4):
     # font sizes

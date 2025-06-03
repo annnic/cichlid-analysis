@@ -158,7 +158,7 @@ def plot_2D_pc_space_orig(rootdir, data_input, finalDf):
     ax.tick_params(axis='x', pad=0.5)
     ax.tick_params(axis='y', pad=0.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "pca_2D_figure.pdf"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "pca_2D_figure.pdf"), dpi=350) # figure 1d
     plt.close()
     return
 
@@ -208,7 +208,7 @@ def plot_variance_explained(rootdir, pca):
     ax.tick_params(axis='x', pad=0.5)
     ax.tick_params(axis='y', pad=0.5)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "explained_variance_.pdf"), dpi=350)
+    plt.savefig(os.path.join(rootdir, "explained_variance_.pdf"), dpi=350) # figure 1e
     plt.close()
     return
 
@@ -248,6 +248,7 @@ def plot_factor_loading_matrix(rootdir, loadings, tribe_col, sp_to_tribes, top_p
 
 def plot_factor_loading_variance_matrix(rootdir, data_input_norm, fish_tracks_bin, loadings, tribe_col, sp_to_tribes, top_pc=3):
     """ Plot the factor loading matrix for top X pcs
+    also has the definition of defining cathemeral species
 
     :param rootdir:
     :param loadings:
@@ -294,6 +295,7 @@ def plot_factor_loading_variance_matrix(rootdir, data_input_norm, fish_tracks_bi
     all_std_df = all_std_df.set_index('species').astype(float)
     loadings_std = pd.merge(loadings.iloc[:, :top_pc], all_std_df, left_index=True, right_index=True)
 
+    # defining cathemeral species
     values = (all_std_df.std_mean * 2) / all_std_df.max_min_spd_dif
     cathemeral_sp = values[values > 1]
 
