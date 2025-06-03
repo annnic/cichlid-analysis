@@ -2,7 +2,8 @@
 cichlid behaviour analysis code 
 
 General pipeline
-Get units:
+Get units and the fish size:
+
 Run measure_units.py (assumes you're measuring the width of the divider which is divider_base_mm = 15) on each camera folder's background.
 Run measure_fish.py (allows you to select a frame to measure the standard length of the fish, and update the fish sex)
 
@@ -25,3 +26,7 @@ You can move the _als_30m.csv and _als_fv2.csv files to a folder which has these
 run_binned.py (for plots and analysis across fish species using the _als_30m.csv data)
 and
 run_feature_vector.py (for plots and analysis across fish species using the _als_fv2.csv data)
+
+run_weekly_daily_figure_plots.py (for the single plots for the fishes for the extended figures)
+
+PCA (runs the PCA analysis in Figure 1)
